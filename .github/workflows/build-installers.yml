@@ -4,10 +4,12 @@ on:
   workflow_dispatch:
   push:
     tags:
-      - 'v*'     # build tagged releases only
+      - 'v*' # build tagged releases only
+
+permissions:
+  contents: write
 
 jobs:
-
   mac-build:
     name: Build macOS DMG
     runs-on: macos-latest
@@ -39,12 +41,16 @@ jobs:
             --app-drop-link 350 150 \
             STM32Builder.dmg \
             dist/
+        working-directory: dist
 
-      - name: Upload macOS artifact
+      - name: Verify DMG exists
+        run: ls -R .
+
+      - name: Upload macOS artifact (Release)
         uses: softprops/action-gh-release@v1
-        with:
-          files: STM32Builder.dmg
         if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: dist/STM32Builder.dmg
 
 
   windows-build:
@@ -68,12 +74,16 @@ jobs:
       - name: Install Inno Setup
         run: choco install innosetup --yes
 
-      - name: Build Windows installer
+      - name: Build Windows installer (.exe)
         run: |
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "${{ github.workspace }}\installer.iss"
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" `
+            "${{ github.workspace }}\installer.iss"
 
-      - name: Upload Windows artifact
+      - name: Verify installer exists
+        run: dir installer
+
+      - name: Upload Windows artifact (Release)
         uses: softprops/action-gh-release@v1
-        with:
-          files: installer\STM32BuilderInstaller.exe
         if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: installer/STM32BuilderInstaller.exe
