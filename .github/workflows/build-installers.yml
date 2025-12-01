@@ -70,7 +70,7 @@ jobs:
 
       - name: Build Windows installer
         run: |
-          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "installer.iss"
 
       - name: Upload Windows artifact
         uses: softprops/action-gh-release@v1
