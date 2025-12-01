@@ -3,18 +3,9 @@
 ; ================================
 
 #define AppName "STM32Builder"
+#define AppVersion "1.0.0"
 #define AppPublisher "Rodrigue de Guerre"
 #define AppExeName "STM32Builder.exe"
-
-; --- Retrieve version from EXE or fallback to "1.0.0" ---
-#expr Exec("powershell -command \"(Get-Item 'dist\\STM32Builder\\STM32Builder.exe').VersionInfo.ProductVersion\"", 
-    AppVersion, 
-    "1.0.0")
-
-; If the PS command fails, this fallback ensures installer still builds
-#ifndef AppVersion
-#define AppVersion "1.0.0"
-#endif
 
 [Setup]
 AppId={{A1F8A8B0-4B71-4DED-AE18-6B5C295388F2}
@@ -31,18 +22,21 @@ SolidCompression=yes
 ArchitecturesAllowed=x64
 ArchitecturesInstallIn64BitMode=x64
 WizardStyle=modern
-
-SetupIconFile="dist\STM32Builder\icons\app.ico"
-
+SetupIconFile="icons\app.ico"
 UninstallDisplayIcon="{app}\{#AppExeName}"
 
 [Files]
+; Main executable
 Source: "dist\STM32Builder\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+
+; Include PyInstaller output
 Source: "dist\STM32Builder\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+
+; Include Windows toolchain
 Source: "toolchain\win\*"; DestDir: "{app}\toolchain\win"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"; IconFilename="{app}\icons\app.ico"
+Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 
 [Run]
