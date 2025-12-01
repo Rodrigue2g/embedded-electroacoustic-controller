@@ -127,7 +127,7 @@ class BuilderGUI(QWidget):
             )
         else:
             # Development mode: use local folder
-            return os.path.join(os.path.dirname(os.path.abspath(__file__)), "Accoustic-Controller")
+            return os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
 
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
@@ -291,23 +291,36 @@ class BuilderGUI(QWidget):
         os_type = self.detect_os()
 
         # cmd = "openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c \"program build/firmware.elf verify reset exit\""
+        if getattr(sys, "frozen", False):
+            elf = os.path.join(self.app_root, "Accoustic-Controller/Debug/Accoustic-Controller.elf")
+        else:
+            elf = os.path.abspath("firmware/Debug/Accoustic-Controller.elf")
 
+        self.log.append(f"ELF: {elf}")
+        
         if os_type == "mac":
-            # OpenOCD example
             cmd = (
             'openocd '
             '-f interface/stlink.cfg '
-            '-f target/stm32f4x.cfg '
-            '-c "program build/firmware.elf verify reset exit"'
+            '-f target/stm32f7x.cfg '
+            f'-c "program {elf} verify reset exit"'
+            )
+
+        elif os_type == "linux":
+            cmd = (
+                'openocd '
+                '-f interface/stlink.cfg '
+                '-f target/stm32f7x.cfg '
+                f'-c "program {elf} verify reset exit"'
             )
 
         elif os_type == "win":
-            # STM32CubeProgrammer CLI example
+            cube_cli = r'C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe'
             cmd = (
-            r'"C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe" '
-            r'-c port=SWD '
-            r'-w build\firmware.elf '
-            r'-rst'
+                f'"{cube_cli}" '
+                '-c port=SWD '
+                f'-w "{elf}" '
+                '-v -rst'
             )
 
         else:

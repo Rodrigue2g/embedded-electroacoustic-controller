@@ -1,0 +1,10 @@
+#ifndef GENERATED_PARAMS_H
+#define GENERATED_PARAMS_H
+
+#define B0 -1.324324924640e-03f
+#define B1 2.582948307437e-03f
+#define B2 -1.273978377499e-03f
+#define A1 1.988127816048e+00f
+#define A2 -9.942152428904e-01f
+
+#endif
