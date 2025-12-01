@@ -10,7 +10,7 @@ datas = [
 ]
 
 a = Analysis(
-    ['gui_builder.py'],
+    ['gui.py'],
     pathex=['.'],
     binaries=[],
     datas=datas,
