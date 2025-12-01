@@ -5,7 +5,7 @@ block_cipher = None
 datas = [
     ('toolchain/mac', 'toolchain/mac'),
     ('toolchain/win', 'toolchain/win'),
-    ('Accoustic-Controller', 'Accoustic-Controller'),
+    ('firmware', 'Accoustic-Controller'),
     ('icons', 'icons'),
 ]
 
