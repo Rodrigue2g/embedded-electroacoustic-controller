@@ -5,25 +5,51 @@ import control
 class Params:
     pass
 
-def compute_filter_coeffs(params):
-    """Computes discrete filter coefficients from physical parameters."""
+# def compute_filter_coeffs(params):
+#     """Computes discrete filter coefficients from physical parameters."""
 
-    # Continuous numerator
+#     # Continuous numerator
+#     num_c = [
+#         params.Sd/params.Bl * params.a2,
+#         params.Sd/params.Bl * params.a1,
+#         params.Sd/params.Bl * params.a0
+#     ]
+#     # Continuous denominator
+#     den_c = [params.b2, params.b1, params.b0]
+
+#     Phi_c = control.tf(num_c, den_c)
+#     Phi_d = control.c2d(Phi_c, params.ts_ctr, method='tustin')
+
+#     bz = Phi_d.num[0][0]
+#     az = Phi_d.den[0][0]
+
+#     return bz, az   # Python lists
+
+def compute_filter_coeffs(params):
+    """Replicates MATLAB discretize_params() exactly."""
+
+    # === Apply the MATLAB scaling ===
+    scaling = params.Sd / params.Bl
     num_c = [
-        params.Sd/params.Bl * params.a2,
-        params.Sd/params.Bl * params.a1,
-        params.Sd/params.Bl * params.a0
+        scaling * params.a2,
+        scaling * params.a1,
+        scaling * params.a0
     ]
+
     # Continuous denominator
     den_c = [params.b2, params.b1, params.b0]
 
+    # Continuous TF
     Phi_c = control.tf(num_c, den_c)
+
+    # Discretize with Tustin
     Phi_d = control.c2d(Phi_c, params.ts_ctr, method='tustin')
 
-    bz = Phi_d.num[0][0]
-    az = Phi_d.den[0][0]
+    # Extract coefficients
+    bz = list(Phi_d.num[0][0])  # [b0, b1, b2]
+    az = list(Phi_d.den[0][0])  # [1,  a1,  a2]
 
-    return bz, az   # Python lists
+    return bz, az
 
 
 def initParams():

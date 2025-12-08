@@ -39,7 +39,7 @@ class BuilderGUI(QWidget):
         form = QFormLayout()
 
         # CONTROL SENSITIVITY
-        self.sens_p_input = QLineEdit(str(-1.0 / 37.1e-3))
+        self.sens_p_input = QLineEdit(str(37.1e-3))
         self.i2u_input    = QLineEdit("100.0")
 
         # SPEAKER PARAMETERS
@@ -65,7 +65,7 @@ class BuilderGUI(QWidget):
         form.addRow("Mms (kg):", self.Mms_input)
         form.addRow("Cmc (m/N):", self.Cmc_input)
 
-        form.addRow("f0 (Hz):",   self.f0_input)
+        # form.addRow("f0 (Hz):",   self.f0_input)
         form.addRow("f_target (Hz):", self.f_tgt_input)
 
         form.addRow("muM:", self.muM_input)
@@ -158,7 +158,7 @@ class BuilderGUI(QWidget):
         params.Mms = float(self.Mms_input.text())
         params.Cmc = float(self.Cmc_input.text())
 
-        params.f0 = float(self.f0_input.text())
+        # params.f0 = float(self.f0_input.text())
         f_tgt     = float(self.f_tgt_input.text())
 
         # --- Derived physics ---
@@ -181,12 +181,17 @@ class BuilderGUI(QWidget):
         params.a1 = (params.muR - 1.0) * params.Rms * params.Cmc
         params.a0 = (params.muC - 1.0)
 
+        # scaling_factor = params.Sd / params.Bl
+        # params.a2 *= scaling_factor
+        # params.a1 *= scaling_factor
+        # params.a0 *= scaling_factor
+
         params.ts_ctr = 40e-6
 
         # --- Run c2d ---
         bz, az = compute_filter_coeffs(params)
 
-        # CMSIS signs
+        # CMSIS coefs
         b0, b1, b2 = bz
         a1 = -az[1]
         a2 = -az[2]
@@ -199,8 +204,18 @@ class BuilderGUI(QWidget):
             self.log.append(f"[save_params] ERROR: directory does not exist:\n    {core_src}\n")
             return
 
-        content = f"""#ifndef GENERATED_PARAMS_H
+        content = f"""/* 
+ * This file is auto-generated. DO NOT EDIT BY HAND.
+ * Any manual changes will be overwritten.
+ */
+#ifndef GENERATED_PARAMS_H
 #define GENERATED_PARAMS_H
+
+#define SENS_P {params.sens_p:.12e}f
+#define I2U {params.i2u:.12e}f
+
+#define SD {params.Sd:.12e}f
+#define BL {params.Bl:.12e}f
 
 #define B0 {b0:.12e}f
 #define B1 {b1:.12e}f
