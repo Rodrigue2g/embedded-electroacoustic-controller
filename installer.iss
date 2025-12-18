@@ -8,7 +8,7 @@
 #define AppExeName "STM32Builder.exe"
 
 [Setup]
-AppId={A1F8A8B0-4B71-4DED-AE18-6B5C295388F2}
+AppId={{A1F8A8B0-4B71-4DED-AE18-6B5C295388F2}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
