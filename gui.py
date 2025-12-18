@@ -296,6 +296,7 @@ class BuilderGUI(QWidget):
 
 
     def flash_project(self):
+        self.log.append(f"Flashing firmware...")
         if not self.project_path:
             self.log.append("No project selected!")
             return
