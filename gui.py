@@ -89,21 +89,41 @@ class BuilderGUI(QWidget):
     ##
     def get_app_root(self):
         if getattr(sys, 'frozen', False):
-            # Use Contents/Resources as root where data is stored
-            return os.path.join(os.path.dirname(sys.executable), "..", "Resources")
-        return os.path.dirname(os.path.abspath(__file__))
+            if sys.platform == "darwin":
+                return os.path.abspath(
+                    os.path.join(os.path.dirname(sys.executable), "..", "Resources")
+                )
+            else:
+                # Windows / Linux
+                return os.path.dirname(sys.executable) #sys._MEIPASS
+        else:
+            return os.path.dirname(os.path.abspath(__file__))
+
     def get_project_root(self):
         if getattr(sys, 'frozen', False):
-            # Project is bundled in Resources
-            return os.path.join(
-                os.path.dirname(sys.executable),
-                "..",   # Contents
-                "Resources",
-                "Accoustic-Controller"
-            )
+            if sys.platform == "darwin":
+                # Project is bundled in Resources (MacOS Only)
+                return os.path.join(
+                    os.path.dirname(sys.executable),
+                    "..",   # Contents
+                    "Resources",
+                    "Accoustic-Controller"
+                )
+            else:
+                # Windows / Linux
+                return os.path.join(
+                    os.path.dirname(sys.executable),
+                    "Accoustic-Controller"
+                )
+                # or just
+                # return os.path.join(
+                #     sys._MEIPASS,
+                #     "Accoustic-Controller"
+                # )
         else:
             # Dev mode uses the local folder
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
+        
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:

@@ -8,7 +8,7 @@
 #define AppExeName "STM32Builder.exe"
 
 [Setup]
-AppId={{A1F8A8B0-4B71-4DED-AE18-6B5C295388F2}
+AppId={A1F8A8B0-4B71-4DED-AE18-6B5C295388F2}
 AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
@@ -34,6 +34,8 @@ Source: "dist\STM32Builder\*"; DestDir: "{app}"; Flags: ignoreversion recursesub
 
 ; Include Windows toolchain
 Source: "toolchain\win\*"; DestDir: "{app}\toolchain\win"; Flags: ignoreversion recursesubdirs createallsubdirs
+; Include the firmware sources
+Source: "firmware\*"; DestDir: "{app}\Accoustic-Controller"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
