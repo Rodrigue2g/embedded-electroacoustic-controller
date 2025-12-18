@@ -197,6 +197,28 @@ class BuilderGUI(QWidget):
         # print("env[PATH]")
         # print(env["PATH"])
 
+        # os_type = self.detect_os()
+        # if os_type == "win":
+        #     process = subprocess.Popen(
+        #         cmd,
+        #         shell=False,
+        #         stdout=subprocess.PIPE,
+        #         stderr=subprocess.STDOUT,
+        #         text=True,
+        #         cwd=cwd,
+        #         env=env
+        #     )
+        # else:
+        #     process = subprocess.Popen(
+        #         cmd,
+        #         shell=True,
+        #         stdout=subprocess.PIPE,
+        #         stderr=subprocess.STDOUT,
+        #         text=True,
+        #         cwd=cwd,
+        #         env=env
+        #     )
+            
         process = subprocess.Popen(
             cmd,
             shell=True,
@@ -206,6 +228,7 @@ class BuilderGUI(QWidget):
             cwd=cwd,
             env=env
         )
+
         for line in process.stdout:
             self.log.append(line)
         process.wait()
@@ -304,13 +327,25 @@ class BuilderGUI(QWidget):
             )
 
         elif os_type == "win":
-            cube_cli = r'C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe'
+            # cmd = (
+            #     'openocd '
+            #     '-f interface/stlink.cfg '
+            #     '-f target/stm32f7x.cfg '
+            #     f'-c "program {elf} verify reset exit"'
+            # )
             cmd = (
-                f'"{cube_cli}" '
-                '-c port=SWD '
-                f'-w "{elf}" '
+                'STM32_Programmer_CLI.exe '
+                '-c port=SWD mode=UR '
+                f'-w "{elf}" 0x08000000 '
                 '-v -rst'
             )
+            # cube_cli = r'C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe'
+            # cmd = (
+            #     f'"{cube_cli}" '
+            #     '-c port=SWD '
+            #     f'-w "{elf}" '
+            #     '-v -rst'
+            # )
 
         else:
             self.log.append("Unsupported OS for flashing.")
