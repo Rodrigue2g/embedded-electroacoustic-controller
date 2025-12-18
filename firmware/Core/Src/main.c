@@ -62,6 +62,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 Params params;
+Params params_arr[3];
 
 float input_f32;
 float output_f32;
@@ -69,7 +70,15 @@ float output_f32;
 float biquad_coeffs[5];
 float biquad_state[4];
 
+float coeffs_mode1[5 * NUM_STAGES];
+float coeffs_mode2[5 * NUM_STAGES];
+float coeffs_mode3[5 * NUM_STAGES];
+
+float* coeff_lut[4] = { NULL, coeffs_mode1, coeffs_mode2, coeffs_mode3 };
+
+volatile uint8_t current_mode = 1;
 volatile bool control_enabled = true;
+volatile bool system_ready = false;
 
 arm_biquad_cascade_df2T_instance_f32 S;
 
@@ -78,56 +87,59 @@ uint32_t dac_value = 0;
 float phi_out = 0;
 float Vout = 0;
 float Vin = 0;
+// Global/Static variables to maintain state
+static float dc_bias = 0.0f;
+static uint8_t first_run = 1;
+
+// Output Low-Pass Filter State
+static float lpf_out = 0.0f;
+// Cutoff frequency ~500Hz-1kHz depending on sample rate
+#define LPF_ALPHA 0.9f  
 void control_step(void) {
+    if (!system_ready) return;
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
     ADC_val = HAL_ADC_GetValue(&hadc1);
     HAL_ADC_Stop(&hadc1);
+    float Vin_raw = (ADC_val / 4095.0f) * VREF;
+    // --- DC REMOVAL ---
+    if (first_run) {
+        dc_bias = Vin_raw;
+        first_run = 0;
+    } else {
+        dc_bias = 0.999f * dc_bias + 0.001f * Vin_raw;
+    }    
+    float Vin_ac = Vin_raw - dc_bias;
 
-    Vin = (ADC_val / ADC_MAX_VAL) * VREF;
-    float Vin_ac = Vin - VMID;
-    float p = Vin * params.sens_p;
-
-    input_f32 = p;
+    input_f32 = Vin_ac * params.sens_p;
+    
     /**
      * Filter the signal: p (Pascals) -> i (Amps)
      */
     arm_biquad_cascade_df2T_f32(&S, &input_f32, &output_f32, 1);
-
-    Vout = output_f32 * params.i2u * 1; //* OUTPUT_GAIN; 
-
-    /* Clip AC component to +/- 1.65V (VREF/2) */
-    if (Vout < - VMID) Vout = - VMID;
-    if (Vout > VMID) Vout = VMID;
-
-    /* Detect instability */
-    bool unstable =
-        isnan(output_f32) ||
-        isinf(output_f32) ||
-        fabsf(output_f32) > 5.0f;
-
-    if (unstable) {
-        memset(biquad_state, 0, sizeof(biquad_state)); 
-        // arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
-        Vout = 0.0f;
+    
+    // Gain
+    float cmd_voltage = output_f32 * params.i2u;
+    if (current_mode > 0 && current_mode <= 3) {
+        cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
+    } else {
+        cmd_voltage = 0.0f;
     }
 
-    /* Centered output around mid-rail (1.65 V) */
-    float Vcenter = Vout + VMID;     
-    if (Vcenter < 0.0f)   Vcenter = 0.0f;
-    if (Vcenter > VREF)   Vcenter = VREF;
-    /* Clipped output */
-    float Vclipped = Vout;
-    if (Vclipped < 0.0f)  Vclipped = 0.0f;
-    if (Vclipped > VREF)  Vclipped = VREF;
-    /* DAC output */
-    if (!control_enabled) {
-        HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0); 
-        return; 
-    }
-//    dac_value = (uint32_t)((Vclipped / VREF) * ADC_MAX_VAL);
-    dac_value = (uint32_t)((Vcenter / VREF) * ADC_MAX_VAL); 
-//    if (ADC_val < 200.0f && Vout < 0.01 && dac_value > 2000.0f) dac_value = 0.0f;
+    // 1st-order Low Pass Filter (<500Hz).
+    lpf_out = lpf_out + LPF_ALPHA * (cmd_voltage - lpf_out);
+    Vout = cmd_voltage;
+
+    // --- OUTPUT ---
+    float limit = (VREF / 2.0f) * 0.9f; 
+    if (Vout > limit) Vout = limit;
+    if (Vout < -limit) Vout = -limit;
+
+    float Vdac = Vout + (VREF / 2.0f);
+    if (Vdac < 0.0f) Vdac = 0.0f;
+    if (Vdac > VREF) Vdac = VREF / 2.0f; // VREF;
+
+    dac_value = (uint32_t)((Vdac / VREF) * 4095.0f);
     HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_value);
 }
 /* USER CODE END PV */
@@ -186,35 +198,40 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   init_params(&params);
-
-//  biquad_coeffs[0] = params.b0 / params.a0;
-//  biquad_coeffs[1] = params.b1 / params.a0;
-//  biquad_coeffs[2] = params.b2 / params.a0;
-//  biquad_coeffs[3] = -params.a1 / params.a0;
-//  biquad_coeffs[4] = -params.a2 / params.a0;
-
+  init_params_array(params_arr, 3, init_params_m3);
+  // Single Params version
   biquad_coeffs[0] = params.bz[0];
   biquad_coeffs[1] = params.bz[1];
   biquad_coeffs[2] = params.bz[2];
-  biquad_coeffs[3] = params.az[1];   // sign is already fliped during params construction
-  biquad_coeffs[4] = params.az[2];
-
+  biquad_coeffs[3] = -params.az[1];   // sign is already fliped during params construction
+  biquad_coeffs[4] = -params.az[2];
   memset(biquad_state, 0, sizeof(biquad_state));
-
   arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
+
+  init_coefs(coeffs_mode1, coeffs_mode2, coeffs_mode3);
+
+  /**
+   * Init with Mode 1
+   */
+  current_mode = 1;
+  control_enabled = true;
+  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
+                    control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
+
+  // memset(biquad_state, 0, sizeof(biquad_state));
+  // arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, coeff_lut[current_mode], biquad_state);
+
 
   HAL_ADC_Start(&hadc1);
   HAL_DAC_Start(&hdac, DAC_CHANNEL_2);
   HAL_DAC_SetValue(&hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0);
-
-  HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
-                    control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
-
   HAL_TIM_Base_Start_IT(&htim6);
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  system_ready = true;
   while (1)
   {
     /* USER CODE END WHILE */
@@ -397,7 +414,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 2159; //539; 2159
+  htim6.Init.Period = 539; //539; 2159
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -618,26 +635,62 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   * @brief  GPIO External Interrupt Callback
   * This function is called automatically when the button is pressed.
   */
+// void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+// {
+//     if (GPIO_Pin == USER_Btn_Pin)
+//     {
+//         // sftw debouncing
+//         static uint32_t last_press_tick = 0;
+//         uint32_t current_tick = HAL_GetTick();
+
+//         if ((current_tick - last_press_tick) > 200)
+//         {
+//             control_enabled = !control_enabled;
+
+//             // Update LED for visual feedback (Green LED usually LD1)
+//             HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
+//                               control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
+
+//             // Optional: Reset filter state when enabling to avoid "pop"
+//             if (control_enabled) {
+//                 memset(biquad_state, 0, sizeof(biquad_state));
+//                 arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
+//             }
+
+//             last_press_tick = current_tick;
+//         }
+//     }
+// }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
     if (GPIO_Pin == USER_Btn_Pin)
     {
-        // Simple software debouncing: ignore interrupts occurring within 200ms of the last one
+        // Debouncing (200ms)
         static uint32_t last_press_tick = 0;
         uint32_t current_tick = HAL_GetTick();
-
         if ((current_tick - last_press_tick) > 200)
         {
-            control_enabled = !control_enabled;
+            current_mode++;
+            if (current_mode > 3) 
+            {
+                current_mode = 0;
+            }
 
-            // Update LED for visual feedback (Green LED usually LD1)
-            HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
-                              control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, (current_mode == 1) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, (current_mode == 2) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+            HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, (current_mode == 3) ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
-            // Optional: Reset filter state when enabling to avoid "pop"
-            if (control_enabled) {
-                memset(biquad_state, 0, sizeof(biquad_state));
-                arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
+            if (current_mode == 0)
+            {
+                control_enabled = false;
+            }
+            else
+            {
+                system_ready = false;
+                control_enabled = true;
+                // memset(biquad_state, 0, sizeof(biquad_state));
+                arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, coeff_lut[current_mode], biquad_state);
+                system_ready = true;
             }
 
             last_press_tick = current_tick;

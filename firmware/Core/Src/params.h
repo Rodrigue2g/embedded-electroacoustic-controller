@@ -52,6 +52,18 @@ typedef struct {
     float fst_global;
 } Params;
 
+typedef void (*InitParamsFun)(Params *p, int idx);
+
+void init_params_single(Params *p, int idx);
+void init_params_m3(Params *p, int idx);
+void init_params_m6(Params *p, int idx);
+
+
 void init_params(Params *p);
+void init_params_array(Params *array, size_t length, InitParamsFun fun);
+void init_params_m(Params *array, size_t length, InitParamsFun fun);
+void init_coefs(float *a, float *b, float *c);
+
+
 
 #endif /* SRC_PARAMS_H_ */

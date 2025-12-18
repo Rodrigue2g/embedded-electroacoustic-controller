@@ -1,107 +1,82 @@
 import os
 import sys, subprocess
 import platform
+import scipy.signal as signal
+import matplotlib.pyplot as plt
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QPushButton,
-    QVBoxLayout, QTextEdit, QFileDialog, QLabel
+    QApplication, QWidget, QPushButton, QVBoxLayout, 
+    QTextEdit, QFileDialog, QLabel, QTabWidget
 )
-from PySide6.QtWidgets import QHBoxLayout, QLineEdit, QGroupBox, QFormLayout
-from c2d import Params, compute_filter_coeffs
-import numpy as np
-from toolchain import ToolchainManager
-from fractions import Fraction
+from py.c2d import Params, compute_filter_coeffs
+from py.toolchain import ToolchainManager
+from py.ui_components import ParamsWidget
+from py.plot import handle_plot
+from py.save_params import save_all_params
 
 
 class BuilderGUI(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Embedded Builder")
+        self.setWindowTitle("Embedded Builder - Multi Mode")
+        self.resize(800, 600)
 
         self.layout = QVBoxLayout()
 
-        # === Top Controls ===
+        # === 1. TOP CONTROLS ===
+        top_layout = QVBoxLayout()
         self.btn_select = QPushButton("Select Project Folder")
-        self.btn_build = QPushButton("Build")
-        self.btn_flash = QPushButton("Flash")
         self.status_label = QLabel("No project selected.")
-
         self.btn_select.clicked.connect(self.select_folder)
+        top_layout.addWidget(self.btn_select)
+        top_layout.addWidget(self.status_label)
+        self.layout.addLayout(top_layout)
+
+        # === 2. TABS FOR PARAMETERS ===
+        self.tabs = QTabWidget()
+        self.mode1_ui = ParamsWidget("Mode 1 (Default)")
+        self.mode2_ui = ParamsWidget("Mode 2")
+        self.mode3_ui = ParamsWidget("Mode 3")
+        self.mode1_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 1"))
+        self.mode2_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 2"))
+        self.mode3_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 3"))
+        self.tabs.addTab(self.mode1_ui, "Mode 1")
+        self.tabs.addTab(self.mode2_ui, "Mode 2")
+        self.tabs.addTab(self.mode3_ui, "Mode 3")
+        self.layout.addWidget(self.tabs)
+
+        # === 3. BUILD ACTIONS ===
+        self.btn_save = QPushButton("Save All Parameters")
+        self.btn_clean = QPushButton("Clean Build Folder")
+        self.btn_build = QPushButton("Build Firmware")
+        self.btn_flash = QPushButton("Flash Firmware")
+
+        self.btn_save.clicked.connect(self.run_save)
+        self.btn_clean.clicked.connect(self.clean_project)
         self.btn_build.clicked.connect(self.build_project)
         self.btn_flash.clicked.connect(self.flash_project)
 
-        self.layout.addWidget(self.btn_select)
+        self.layout.addWidget(self.btn_save)
+        self.layout.addWidget(self.btn_clean)
         self.layout.addWidget(self.btn_build)
         self.layout.addWidget(self.btn_flash)
-        self.layout.addWidget(self.status_label)
 
-        # === Speaker + Control + Target Parameter UI ===
-        params_group = QGroupBox("Physical Parameters")
-        form = QFormLayout()
-
-        # CONTROL SENSITIVITY
-        self.sens_p_input = QLineEdit(str(37.1e-3))
-        self.i2u_input    = QLineEdit("100.0")
-
-        # SPEAKER PARAMETERS
-        self.Sd_input  = QLineEdit("23.5e-4")
-        self.Bl_input  = QLineEdit("1.806225")
-        self.Rms_input = QLineEdit("0.7426235")
-        self.Mms_input = QLineEdit("0.001329715")
-        self.Cmc_input = QLineEdit("1.339291e-4")
-
-        self.f0_input  = QLineEdit("441.5461")
-        self.f_tgt_input = QLineEdit("220")
-
-        self.muM_input = QLineEdit("0.5")
-        self.muR_factor_input = QLineEdit("1/10")
-
-
-        form.addRow("sens_p:", self.sens_p_input)
-        form.addRow("i2u:",    self.i2u_input)
-
-        form.addRow("Sd (m²):",  self.Sd_input)
-        form.addRow("Bl (Tm):",  self.Bl_input)
-        form.addRow("Rms (N·s/m):", self.Rms_input)
-        form.addRow("Mms (kg):", self.Mms_input)
-        form.addRow("Cmc (m/N):", self.Cmc_input)
-
-        # form.addRow("f0 (Hz):",   self.f0_input)
-        form.addRow("f_target (Hz):", self.f_tgt_input)
-
-        form.addRow("muM:", self.muM_input)
-        form.addRow("muR factor:", self.muR_factor_input)
-
-        params_group.setLayout(form)
-
-        self.btn_save_params = QPushButton("Save Parameters")
-        self.btn_save_params.clicked.connect(self.save_params)
-
-        self.layout.addWidget(params_group)
-        self.layout.addWidget(self.btn_save_params)
-
-        # === Log Window ===
+        # === 4. LOG ===
         self.log = QTextEdit()
         self.log.setReadOnly(True)
         self.layout.addWidget(self.log)
 
-        # Set final layout
         self.setLayout(self.layout)
-
+        
         # Initialize project path
         self.project_path = None
         self.project_path = self.get_project_root()
         self.status_label.setText(f"Selected: {self.project_path}")
-
-        print("sys.frozen =", getattr(sys, 'frozen', None))
-        print("sys._MEIPASS =", getattr(sys, '_MEIPASS', None))
-        print("sys.executable =", sys.executable)
         self.log.append(f"sys.frozen = {getattr(sys, 'frozen', None)}\n")
         self.log.append(f"sys._MEIPASS = {getattr(sys, '_MEIPASS', None)}\n")
         self.log.append(f"sys.executable = {sys.executable}\n")
 
         try:
             app_root = self.get_app_root()
-            print("app_root=", app_root)
             self.log.append(f"app_root= {app_root}\n")
             self.toolchain = ToolchainManager(app_root)
             self.toolchain.load()
@@ -109,13 +84,14 @@ class BuilderGUI(QWidget):
         except Exception as e:
             self.log.append(f"Toolchain error: {e}\n")
 
-
+    ##
+    # Paths
+    ##
     def get_app_root(self):
         if getattr(sys, 'frozen', False):
             # Use Contents/Resources as root where data is stored
             return os.path.join(os.path.dirname(sys.executable), "..", "Resources")
         return os.path.dirname(os.path.abspath(__file__))
-
     def get_project_root(self):
         if getattr(sys, 'frozen', False):
             # Project is bundled in Resources
@@ -126,113 +102,34 @@ class BuilderGUI(QWidget):
                 "Accoustic-Controller"
             )
         else:
-            # Development mode: use local folder
+            # Dev mode uses the local folder
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
-
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
             self.project_path = folder
             self.status_label.setText(f"Selected: {folder}")
 
+    ##
+    # Params + Plots
+    ##
+    def run_plot(self, values, mode_name):
+        """
+        Wrapper for the plotting logic.
+        We pass 'self' so the external function can access self.log
+        """
+        handle_plot(self, values, mode_name)
 
-    def save_params(self):
-        if not self.project_path:
-            self.log.append("Select a project folder first.")
-            return
+    def run_save(self):
+        """
+        Wrapper for the saving logic.
+        We pass 'self' so the external function can access ui widgets and paths.
+        """
+        save_all_params(self)
 
-        # --- Create params object ---
-        params = Params()
-
-        # CONSTANTS
-        params.c0 = 347.13
-        params.rho0 = 1.1839
-
-        # USER INPUTS (GUI)
-        params.sens_p = float(self.sens_p_input.text())
-        params.i2u    = float(self.i2u_input.text())
-
-        params.Sd  = float(self.Sd_input.text())
-        params.Bl  = float(self.Bl_input.text())
-        params.Rms = float(self.Rms_input.text())
-        params.Mms = float(self.Mms_input.text())
-        params.Cmc = float(self.Cmc_input.text())
-
-        # params.f0 = float(self.f0_input.text())
-        f_tgt     = float(self.f_tgt_input.text())
-
-        # --- Derived physics ---
-        params.muM = float(self.muM_input.text())
-        try:
-            muR_factor = float(Fraction(self.muR_factor_input.text()))
-        except ValueError as e:
-            self.log.append(f"Fraction error: {e}\n")
-            muR_factor = 1/20
-            self.log.append(f"Will use default value: {muR_factor}\n")
-
-        params.muR = muR_factor * params.rho0 * params.c0 * params.Sd / params.Rms
-        params.muC = (2*np.pi*f_tgt)**2 * params.Mms * params.Cmc
-
-        params.b2 = params.muM * params.Mms * params.Cmc
-        params.b1 = params.muR * params.Rms * params.Cmc
-        params.b0 = params.muC
-
-        params.a2 = (params.muM - 1.0) * params.Mms * params.Cmc
-        params.a1 = (params.muR - 1.0) * params.Rms * params.Cmc
-        params.a0 = (params.muC - 1.0)
-
-        # scaling_factor = params.Sd / params.Bl
-        # params.a2 *= scaling_factor
-        # params.a1 *= scaling_factor
-        # params.a0 *= scaling_factor
-
-        params.ts_ctr = 40e-6
-
-        # --- Run c2d ---
-        bz, az = compute_filter_coeffs(params)
-
-        # CMSIS coefs
-        b0, b1, b2 = bz
-        a1 = -az[1]
-        a2 = -az[2]
-
-        # --- Generate header ---
-        # header_path = f"{self.project_path}/Core/Src/generated_params.h"
-        header_path = os.path.join(self.project_path, "Core", "Src", "generated_params.h")
-        core_src = os.path.dirname(header_path)
-        if not os.path.isdir(core_src):
-            self.log.append(f"[save_params] ERROR: directory does not exist:\n    {core_src}\n")
-            return
-
-        content = f"""/* 
- * This file is auto-generated. DO NOT EDIT BY HAND.
- * Any manual changes will be overwritten.
- */
-#ifndef GENERATED_PARAMS_H
-#define GENERATED_PARAMS_H
-
-#define SENS_P {params.sens_p:.12e}f
-#define I2U {params.i2u:.12e}f
-
-#define SD {params.Sd:.12e}f
-#define BL {params.Bl:.12e}f
-
-#define B0 {b0:.12e}f
-#define B1 {b1:.12e}f
-#define B2 {b2:.12e}f
-#define A1 {a1:.12e}f
-#define A2 {a2:.12e}f
-
-#endif
-"""
-        try:
-            with open(header_path, "w") as f:
-                f.write(content)
-            self.log.append(f"✔ Updated {header_path}\n")
-        except Exception as e:
-            self.log.append(f"[save_params] WRITE FAILED: {e}\n")
-
-
+    ##
+    # Firmware
+    ##
     def run_cmd(self, cmd, cwd=None):
         if cwd is None:
             cwd = self.project_path
@@ -266,6 +163,33 @@ class BuilderGUI(QWidget):
         else:
             return "other"
 
+    def clean_project(self):
+        if not self.project_path:
+            self.log.append("No project selected!")
+            return
+
+        build_dir = os.path.join(self.project_path, "Debug")
+        
+        if not os.path.isdir(build_dir):
+             self.log.append(f"Build directory not found: {build_dir}\n")
+             return
+
+        self.log.append(f"Cleaning in: {build_dir}\n")
+
+        os_type = self.detect_os()
+
+        if os_type == "mac":
+            cmd = "make clean"
+
+        elif os_type == "win":
+            cmd = r"C:\STM32\Tools\make.exe clean"
+
+        else:
+            self.log.append("Unsupported OS for cleaning.")
+            return
+
+        self.run_cmd(cmd, cwd=build_dir)
+
     def build_project(self):
         if not self.project_path:
             self.log.append("No project selected!")
@@ -276,19 +200,10 @@ class BuilderGUI(QWidget):
 
         os_type = self.detect_os()
 
-        # Adjust depending the toolchain
-        # Examples:
-        #   make
-        #   cmake --build .
-        #   stm32cubeide --launcher.suppressErrors -nosplash -application headless ... 
-
         if os_type == "mac":
-            # Most macOS users use gcc-arm-none-eabi + make
             cmd = "make all -j8"
 
         elif os_type == "win":
-            # Windows needs full path to make.exe (or mingw32-make)
-            # Example:
             cmd = r"C:\STM32\Tools\make.exe -j8"
 
         else:

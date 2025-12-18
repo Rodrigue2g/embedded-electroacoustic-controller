@@ -1,1 +1,6 @@
 ../Core/Src/params.c:11:6:init_params	1
+../Core/Src/params.c:33:6:init_params_array	3
+../Core/Src/params.c:50:6:init_params_single	1
+../Core/Src/params.c:58:6:init_params_m3	5
+../Core/Src/params.c:96:6:init_params_m6	7
+../Core/Src/params.c:142:6:init_coefs	1
