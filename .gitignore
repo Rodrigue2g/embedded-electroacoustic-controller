@@ -31,7 +31,7 @@
 *.lo
 
 # Shared objects (inc. Windows DLLs)
-# *.dll
+*.dll
 *.so
 *.so.*
 *.dylib
@@ -191,3 +191,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# We keep everything in the toolchain
+# !toolchain/**/*.o
+!toolchain/win/**
+toolchain/**/*.DS_Store
