@@ -12,7 +12,9 @@ from py.toolchain import ToolchainManager
 from py.ui_components import ParamsWidget
 from py.plot import handle_plot
 from py.save_params import save_all_params
-
+import shutil
+from pathlib import Path
+import platform
 
 class BuilderGUI(QWidget):
     def __init__(self):
@@ -81,6 +83,15 @@ class BuilderGUI(QWidget):
             self.toolchain = ToolchainManager(app_root)
             self.toolchain.load()
             self.log.append("✔ Toolchain loaded.\n")
+            env = self.toolchain.get_env()
+            self.log.append("PATH=\n" + env["PATH"] + "\n")
+            if shutil.which("make", path=env["PATH"]) is None:
+                self.log.append("❌ make not found in PATH\n")
+            else:
+                self.log.append("✔ make found in PATH\n")
+
+            self.project_path = self.ensure_user_firmware(app_root, self.log)
+            self.status_label.setText(f"Selected: {self.project_path}")
         except Exception as e:
             self.log.append(f"Toolchain error: {e}\n")
 
@@ -123,6 +134,32 @@ class BuilderGUI(QWidget):
         else:
             # Dev mode uses the local folder
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
+        
+    def ensure_user_firmware(self, app_root, log=None):
+        if getattr(sys, 'frozen', False):
+            if platform.system() == "Windows":
+                base = Path.home() / "Documents" / "STM32Builder"
+            else:
+                # macOS: you can keep current behavior or mirror this
+                base = Path(app_root)
+
+            dst = base / "Accoustic-Controller"
+            src = Path(app_root) / "Accoustic-Controller"
+
+            if not dst.exists():
+                shutil.copytree(src, dst)
+                if log:
+                    log.append(f"✔ Firmware copied to user workspace:\n{dst}\n")
+            else:
+                if log:
+                    log.append(f"✔ Using existing firmware:\n{dst}\n")
+
+            return str(dst)
+        else:
+            # Dev mode uses the local folder
+            return os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
+
+
         
     def select_folder(self):
         folder = QFileDialog.getExistingDirectory(self, "Select Folder")
@@ -202,7 +239,8 @@ class BuilderGUI(QWidget):
             cmd = "make clean"
 
         elif os_type == "win":
-            cmd = r"C:\STM32\Tools\make.exe clean"
+            # cmd = r"C:\STM32\Tools\make.exe clean"
+            cmd = "make clean"
 
         else:
             self.log.append("Unsupported OS for cleaning.")
@@ -224,7 +262,8 @@ class BuilderGUI(QWidget):
             cmd = "make all -j8"
 
         elif os_type == "win":
-            cmd = r"C:\STM32\Tools\make.exe -j8"
+            # cmd = r"C:\STM32\Tools\make.exe -j8"
+            cmd = "make all -j8"
 
         else:
             self.log.append("Unsupported OS for building.")
