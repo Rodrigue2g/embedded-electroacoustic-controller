@@ -251,8 +251,8 @@ class BuilderGUI(QWidget):
         build_dir = os.path.join(self.project_path, "Debug")
         
         if not os.path.isdir(build_dir):
-             self.log.append(f"Build directory not found: {build_dir}\n")
-             return
+            self.log.append(f"Build directory not found: {build_dir}\n")
+            return
 
         self.log.append(f"Cleaning in: {build_dir}\n")
 
@@ -301,16 +301,17 @@ class BuilderGUI(QWidget):
             self.log.append("No project selected!")
             return
 
+        elf = os.path.join(self.project_path, "Debug", "Accoustic-Controller.elf")
+        self.log.append(f"Flashing ELF: {elf}")
+
         os_type = self.detect_os()
 
         # cmd = "openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c \"program build/firmware.elf verify reset exit\""
-        if getattr(sys, "frozen", False):
-            elf = os.path.join(self.app_root, "Accoustic-Controller/Debug/Accoustic-Controller.elf")
-        else:
-            elf = os.path.abspath("firmware/Debug/Accoustic-Controller.elf")
+        # if getattr(sys, "frozen", False):
+        #     elf = os.path.join(self.project_path, "Accoustic-Controller/Debug/Accoustic-Controller.elf")
+        # else:
+        #     elf = os.path.abspath("firmware/Debug/Accoustic-Controller.elf")
 
-        self.log.append(f"ELF: {elf}")
-        
         if os_type == "mac":
             cmd = (
             'openocd '
