@@ -95,83 +95,54 @@ static uint8_t first_run = 1;
 static float lpf_out = 0.0f;
 // Cutoff frequency ~500Hz-1kHz depending on sample rate
 #define LPF_ALPHA 0.9f  
-// void control_step(void) {
-//     if (!system_ready) return;
-//     HAL_ADC_Start(&hadc1);
-//     HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
-//     ADC_val = HAL_ADC_GetValue(&hadc1);
-//     HAL_ADC_Stop(&hadc1);
-//     float Vin_raw = (ADC_val / 4095.0f) * VREF;
-//     // --- DC REMOVAL ---
-//     if (first_run) {
-//         dc_bias = Vin_raw;
-//         first_run = 0;
-//     } else {
-//         dc_bias = 0.999f * dc_bias + 0.001f * Vin_raw;
-//     }    
-//     float Vin_ac = Vin_raw - dc_bias;
-
-//     input_f32 = Vin_ac * params.sens_p;
-    
-//     /**
-//      * Filter the signal: p (Pascals) -> i (Amps)
-//      */
-//     arm_biquad_cascade_df2T_f32(&S, &input_f32, &output_f32, 1);
-    
-//     // Gain
-//     float cmd_voltage = output_f32 * params.i2u;
-//     if (current_mode > 0 && current_mode <= 3) {
-//         cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
-//     } else {
-//         cmd_voltage = 0.0f;
-//     }
-
-//     // 1st-order Low Pass Filter (<500Hz).
-//     lpf_out = lpf_out + LPF_ALPHA * (cmd_voltage - lpf_out);
-//     Vout = cmd_voltage;
-
-//     // --- OUTPUT ---
-//     float limit = (VREF / 2.0f) * 0.9f; 
-//     if (Vout > limit) Vout = limit;
-//     if (Vout < -limit) Vout = -limit;
-
-//     float Vdac = Vout + (VREF / 2.0f);
-//     if (Vdac < 0.0f) Vdac = 0.0f;
-//     if (Vdac > VREF) Vdac = VREF / 2.0f; // VREF;
-
-//     dac_value = (uint32_t)((Vdac / VREF) * 4095.0f);
-//     HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_value);
-// }
-
 void control_step(void) {
     if (!system_ready) return;
-
-    // 1. Read ADC
     HAL_ADC_Start(&hadc1);
-    if (HAL_ADC_PollForConversion(&hadc1, 1) == HAL_OK) {
-        uint32_t ADC_val = HAL_ADC_GetValue(&hadc1);
-        float Vin_raw = (ADC_val / 4095.0f) * VREF;
-
-        // 2. DC Removal (High Pass behavior)
+    HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
+    ADC_val = HAL_ADC_GetValue(&hadc1);
+    HAL_ADC_Stop(&hadc1);
+    float Vin_raw = (ADC_val / 4095.0f) * VREF;
+    // --- DC REMOVAL ---
+    if (first_run) {
+        dc_bias = Vin_raw;
+        first_run = 0;
+    } else {
         dc_bias = 0.999f * dc_bias + 0.001f * Vin_raw;
-        float Vin_ac = Vin_raw - dc_bias;
+    }    
+    float Vin_ac = Vin_raw - dc_bias;
 
-        // 3. Process Band-Pass Filter
-        float Vout;
-        arm_biquad_cascade_df2T_f32(&S, &Vin_ac, &Vout, 1);
-
-        // 4. Output to DAC (Biased to VREF/2)
-        // Gain can be applied here (e.g., Vout * 2.0f)
-        float Vdac = Vout + (VREF / 2.0f);
-        
-        // Safety Clamping
-        if (Vdac > VREF) Vdac = VREF;
-        if (Vdac < 0.0f) Vdac = 0.0f;
-
-        uint32_t dac_val = (uint32_t)((Vdac / VREF) * 4095.0f);
-        HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_val);
+    input_f32 = Vin_ac * params.sens_p;
+    
+    /**
+     * Filter the signal: p (Pascals) -> i (Amps)
+     */
+    arm_biquad_cascade_df2T_f32(&S, &input_f32, &output_f32, 1);
+    
+    // Gain
+    float cmd_voltage = output_f32 * params.i2u;
+    if (current_mode > 0 && current_mode <= 3) {
+        cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
+    } else {
+        cmd_voltage = 0.0f;
     }
+
+    // 1st-order Low Pass Filter (<500Hz).
+    lpf_out = lpf_out + LPF_ALPHA * (cmd_voltage - lpf_out);
+    Vout = cmd_voltage * 0.1f;
+
+    // --- OUTPUT ---
+    float limit = (VREF / 2.0f) * 0.9f; 
+    if (Vout > limit) Vout = limit;
+    if (Vout < -limit) Vout = -limit;
+
+    float Vdac = Vout + (VREF / 2.0f);
+    if (Vdac < 0.0f) Vdac = 0.0f;
+    if (Vdac > VREF) Vdac = VREF / 2.0f; // VREF;
+
+    dac_value = (uint32_t)((Vdac / VREF) * 4095.0f);
+    HAL_DAC_SetValue(&hdac, DAC_CHANNEL_2, DAC_ALIGN_12B_R, dac_value);
 }
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -188,22 +159,7 @@ static void MX_DAC_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define SAMPLING_FREQ   200000.0f  // 200kHz based on Timer6 settings
-#define TARGET_FREQ     1000.0f    // Your target center frequency
-#define BANDWIDTH       200.0f     // Width of the pass-band
-void update_bandpass_filter(float fc, float bw) {
-    float omega = 2.0f * PI * fc / SAMPLING_FREQ;
-    float alpha = sinf(omega) * sinhf(logf(2.0f) / 2.0f * bw * omega / sinf(omega));
 
-    float a0 = 1.0f + alpha;
-    biquad_coeffs[0] = alpha / a0;          // b0
-    biquad_coeffs[1] = 0.0f;                // b1
-    biquad_coeffs[2] = (-alpha) / a0;       // b2
-    biquad_coeffs[3] = (2.0f * cosf(omega)) / a0; // -a1 (CMSIS uses flipped signs)
-    biquad_coeffs[4] = -(1.0f - alpha) / a0;      // -a2 (CMSIS uses flipped signs)
-
-    arm_biquad_cascade_df2T_init_f32(&S, 1, biquad_coeffs, biquad_state);
-}
 /* USER CODE END 0 */
 
 /**
@@ -251,7 +207,7 @@ int main(void)
   biquad_coeffs[3] = -params.az[1];   // sign is already fliped during params construction
   biquad_coeffs[4] = -params.az[2];
   memset(biquad_state, 0, sizeof(biquad_state));
-  // arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
+  arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
 
   init_coefs(coeffs_mode1, coeffs_mode2, coeffs_mode3);
 
@@ -263,10 +219,13 @@ int main(void)
   HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
                     control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
 
-  // memset(biquad_state, 0, sizeof(biquad_state));
-  // arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, coeff_lut[current_mode], biquad_state);
+  memset(biquad_state, 0, sizeof(biquad_state));
+  arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, coeff_lut[current_mode], biquad_state);
 
-  update_bandpass_filter(TARGET_FREQ, BANDWIDTH);
+  // update_bandpass_filter(TARGET_FREQ, BANDWIDTH);
+
+  HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 0, 0); // Set high priority
+  HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);         // Enable the interrupt
 
   HAL_ADC_Start(&hadc1);
   HAL_DAC_Start(&hdac, DAC_CHANNEL_2);
@@ -460,7 +419,11 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 539; //539; 2159
+  /**
+   * MARK: Timer Setting (Fs)
+   * Timer prescaler --> Sampling frequency setting
+   */
+  htim6.Init.Period = 10799; //4319; // 539; //539; 2159
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {

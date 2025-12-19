@@ -18,7 +18,7 @@ import shutil
 from pathlib import Path
 import platform
 
-class BuilderGUI(QWidget):
+class GUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Embedded Builder - Multi Mode")
@@ -82,16 +82,14 @@ class BuilderGUI(QWidget):
         self.init_toolchain()
 
     def setup_menu(self):
-        # Create Menu Bar
+        # In the app Menu bar (sys)
         self.menu_bar = QMenuBar(self)
-        
-        # Debug Menu
         debug_menu = self.menu_bar.addMenu("Debug")
         
         # Toggle Action
         self.toggle_advanced_action = QAction("Show Advanced Options", self)
         self.toggle_advanced_action.setCheckable(True)
-        self.toggle_advanced_action.setChecked(False) # Default hidden
+        self.toggle_advanced_action.setChecked(False) # Default
         self.toggle_advanced_action.triggered.connect(self.toggle_advanced_visibility)
         debug_menu.addAction(self.toggle_advanced_action)
 
@@ -106,7 +104,7 @@ class BuilderGUI(QWidget):
         self.combo_fs = QComboBox()
         # Add common control loop frequencies
         self.combo_fs.addItems(["10000", "20000", "25000", "40000", "50000", "2000"])
-        self.combo_fs.setCurrentText("25000") # Default
+        self.combo_fs.setCurrentText("25000")
 
         layout.addWidget(lbl_fs)
         layout.addWidget(self.combo_fs)
@@ -193,7 +191,7 @@ class BuilderGUI(QWidget):
     def get_project_root(self):
         if getattr(sys, 'frozen', False):
             if sys.platform == "darwin":
-                # Project is bundled in Resources (MacOS Only)
+                # On MacOS, it is bundled in Resources
                 return os.path.join(
                     os.path.dirname(sys.executable),
                     "..",   # Contents
@@ -276,28 +274,6 @@ class BuilderGUI(QWidget):
         env = self.toolchain.get_env()
         # print("env[PATH]")
         # print(env["PATH"])
-
-        # os_type = self.detect_os()
-        # if os_type == "win":
-        #     process = subprocess.Popen(
-        #         cmd,
-        #         shell=False,
-        #         stdout=subprocess.PIPE,
-        #         stderr=subprocess.STDOUT,
-        #         text=True,
-        #         cwd=cwd,
-        #         env=env
-        #     )
-        # else:
-        #     process = subprocess.Popen(
-        #         cmd,
-        #         shell=True,
-        #         stdout=subprocess.PIPE,
-        #         stderr=subprocess.STDOUT,
-        #         text=True,
-        #         cwd=cwd,
-        #         env=env
-        #     )
             
         process = subprocess.Popen(
             cmd,
@@ -342,7 +318,6 @@ class BuilderGUI(QWidget):
             cmd = "make clean"
 
         elif os_type == "win":
-            # cmd = r"C:\STM32\Tools\make.exe clean"
             cmd = "make clean"
 
         else:
@@ -365,7 +340,6 @@ class BuilderGUI(QWidget):
             cmd = "make all -j8"
 
         elif os_type == "win":
-            # cmd = r"C:\STM32\Tools\make.exe -j8"
             cmd = "make all -j8"
 
         else:
@@ -434,12 +408,3 @@ class BuilderGUI(QWidget):
             return
 
         self.run_cmd(cmd)
-
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    gui = BuilderGUI()
-    gui.resize(600, 400)
-    gui.show()
-    sys.exit(app.exec())

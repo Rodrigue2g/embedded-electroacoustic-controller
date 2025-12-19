@@ -53,6 +53,9 @@ def handle_plot(self, values, mode_name):
     H_cont_sim = Y_cont_fft[mask] / (X_fft[mask] + 1e-12)
     H_disc_sim = Y_disc_fft[mask] / (X_fft[mask] + 1e-12)
 
+    # H_cont_sim = Y_cont_fft[mask] * np.linalg.pinv([X_fft[mask]])
+    # H_disc_sim = Y_disc_fft[mask] * np.linalg.pinv([X_fft[mask]])
+
     # Theoretical ref
     w = 2 * np.pi * f_plot
     s = 1j * w

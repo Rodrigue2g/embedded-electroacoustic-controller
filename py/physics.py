@@ -13,7 +13,7 @@ def get_physics_params(values):
     p.Rms = values["Rms"]
     p.Mms = values["Mms"]
     p.Cmc = values["Cmc"]
-    p.ts_ctr = 40e-6
+    p.ts_ctr = 100e-6 #40e-6 #50e-6
 
     p.f_tgt = values["f_tgt"]
     
