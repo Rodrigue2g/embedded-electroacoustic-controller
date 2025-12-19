@@ -43,31 +43,3 @@ Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 
 [Run]
 Filename: "{app}\{#AppExeName}"; Description: "Launch STM32Builder"; Flags: nowait postinstall skipifsilent
-
-[UninstallDelete]
-; This handles the deletion of the folder if it's empty, 
-; but for folders with user data, the [Code] section below is safer.
-Type: filesandordirs; Name: "{userdocs}\STM32Builder"
-
-[Code]
-procedure CurUninstallStepChanged(UninstallStep: TUninstallStep);
-var
-  DocsPath: String;
-begin
-  if UninstallStep = usPostUninstall then
-  begin
-    // Locate the Documents\STM32Builder folder
-    DocsPath := ExpandConstant('{userdocs}\STM32Builder');
-    
-    // Check if it exists and ask or just delete
-    if DirExists(DocsPath) then
-    begin
-      if MsgBox('Do you want to delete the user workspace (firmware projects and parameters) in Documents\STM32Builder?', 
-        mbConfirmation, MB_YESNO) = IDYES then
-      begin
-        // Use RemoveDir with 'true' to delete all files and subfolders
-        DelTree(DocsPath, True, True, True);
-      end;
-    end;
-  end;
-end;
