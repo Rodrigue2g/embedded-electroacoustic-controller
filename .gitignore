@@ -27,6 +27,8 @@
 # Libraries
 *.lib
 *.a
+!firmware/**/*.lib
+!firmware/**/*.a
 *.la
 *.lo
 
