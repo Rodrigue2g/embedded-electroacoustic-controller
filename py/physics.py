@@ -19,7 +19,7 @@ def get_physics_params(values):
     
     p.muM = values["muM"]
     p.muR = values["muR_factor"] * p.rho0 * p.c0 * p.Sd / p.Rms
-    #p.muC = p.muM / ((2* np.pi * p.f_tgt)**2 *p.Mms * p.Cmc)
+    #p.muC = p.muM * ((2* np.pi * p.f_tgt)**2 *p.Mms * p.Cmc)
     p.muC = (2*np.pi * p.f_tgt)**2 * p.Mms * p.Cmc
 
     # Denominator
