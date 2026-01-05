@@ -23,14 +23,18 @@ def get_physics_params(values):
     #p.muC = (2*np.pi * p.f_tgt)**2 * p.Mms * p.Cmc
 
     # Denominator
-    p.b2 = p.muM * p.Mms * p.Cmc
+    # p.b2 = p.muM * p.Mms * p.Cmc
+    p.b0 = p.muM * p.Mms * p.Cmc
     p.b1 = p.muR * p.Rms * p.Cmc
-    p.b0 = p.muC
+    # p.b0 = p.muC
+    p.b2 = p.muC
 
     # Numerator
-    p.a2 = (p.muM - 1.0) * p.Mms * p.Cmc
+    # p.a2 = (p.muM - 1.0) * p.Mms * p.Cmc
+    p.a0 = (p.muM - 1.0) * p.Mms * p.Cmc
     p.a1 = (p.muR - 1.0) * p.Rms * p.Cmc
-    p.a0 = (p.muC - 1.0)
+    # p.a0 = (p.muC - 1.0)
+    p.a2 = (p.muC - 1.0)
 
     # scaling_factor = p.Sd / p.Bl
     # p.a2 = a2_raw * scaling_factor
