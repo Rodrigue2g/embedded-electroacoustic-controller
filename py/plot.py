@@ -12,8 +12,10 @@ def handle_plot(self, values, mode_name):
     
     # Comtinuous sys H(s)
     # H(s) = num_c / den_c
-    num_c = np.array([p.a2, p.a1, p.a0]) * p.Sd / p.Bl
-    den_c = np.array([p.b2, p.b1, p.b0])
+    # num_c = np.array([p.a2, p.a1, p.a0]) * p.Sd / p.Bl
+    # den_c = np.array([p.b2, p.b1, p.b0])
+    num_c = np.array([p.a0, p.a1, p.a2]) * p.Sd / p.Bl
+    den_c = np.array([p.b0, p.b1, p.b2])
     Hs_c = (num_c, den_c)
     
     # Signal
