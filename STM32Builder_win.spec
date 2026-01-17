@@ -10,7 +10,7 @@ datas = [
 ]
 
 a = Analysis(
-    ['gui.py'],
+    ['main.py'],
     pathex=['.'],
     binaries=[],
     datas=datas,
@@ -30,7 +30,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='STM32Builder',
+    name='EARBuilder',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -51,12 +51,12 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='STM32Builder',
+    name='EARBuilder',
 )
 
 app = BUNDLE(
     coll,
-    name='STM32Builder.app',
+    name='EARBuilder.app',
     icon='icons/app.ico',
     bundle_identifier=None,
 )

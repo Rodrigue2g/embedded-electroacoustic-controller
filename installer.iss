@@ -1,11 +1,11 @@
 ; ================================
-;   STM32Builder Windows Installer
+;   EARBuilder Windows Installer
 ; ================================
 
-#define AppName "STM32Builder"
+#define AppName "EARBuilder"
 #define AppVersion "1.0.0"
 #define AppPublisher "Rodrigue de Guerre"
-#define AppExeName "STM32Builder.exe"
+#define AppExeName "EARBuilder.exe"
 
 [Setup]
 AppId={{A1F8A8B0-4B71-4DED-AE18-6B5C295388F2}
@@ -16,7 +16,7 @@ DefaultDirName={pf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=no
 OutputDir=installer
-OutputBaseFilename=STM32BuilderInstaller
+OutputBaseFilename=EARBuilderInstaller
 Compression=lzma
 SolidCompression=yes
 ArchitecturesAllowed=x64
@@ -27,10 +27,10 @@ UninstallDisplayIcon="{app}\{#AppExeName}"
 
 [Files]
 ; Main executable
-Source: "dist\STM32Builder\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\EARBuilder\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Include PyInstaller output
-Source: "dist\STM32Builder\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "dist\EARBuilder\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; Include Windows toolchain
 Source: "toolchain\win\*"; DestDir: "{app}\toolchain\win"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -42,4 +42,4 @@ Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{group}\Uninstall {#AppName}"; Filename: "{uninstallexe}"
 
 [Run]
-Filename: "{app}\{#AppExeName}"; Description: "Launch STM32Builder"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\{#AppExeName}"; Description: "Launch EARBuilder"; Flags: nowait postinstall skipifsilent

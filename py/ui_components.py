@@ -17,11 +17,11 @@ class ParamsWidget(QWidget):
         
         # --- INPUTS ---
         self.sens_p_input = QLineEdit("37.1e-3")
-        self.Sd_input     = QLineEdit("23.5e-4")
-        self.Bl_input     = QLineEdit("1.806225")
-        self.Rms_input    = QLineEdit("0.5186787")
-        self.Mms_input    = QLineEdit("0.001")
-        self.Cmc_input    = QLineEdit("0.0001")
+        self.Sd_input     = QLineEdit("24e-4")
+        self.Bl_input     = QLineEdit("1.8656")
+        self.Rms_input    = QLineEdit("0.74")
+        self.Mms_input    = QLineEdit("0.0012")
+        self.Cmc_input    = QLineEdit("1.3638e-4")
 
         self.layout.addRow("sens_p:", self.sens_p_input)
         
@@ -36,15 +36,15 @@ class ParamsWidget(QWidget):
         self.layout.addRow("Cmc (m/N):", self.Cmc_input)
 
         # f_target
-        self.f_tgt_input, self.f_tgt_slider = self.create_slider_input(0, 1000, 200)
+        self.f_tgt_input, self.f_tgt_slider = self.create_slider_input(0, 1000, 220)
         self.add_slider_row("f_target (Hz):", self.f_tgt_input, self.f_tgt_slider)
 
         # muM
-        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, 1.0, scale=1000)
+        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, 0.3, scale=1000)
         self.add_slider_row("muM:", self.muM_input, self.muM_slider)
 
         # muR
-        self.muR_input, self.muR_slider = self.create_slider_input(0.04, 1.0, 0.05, scale=1000)
+        self.muR_input, self.muR_slider = self.create_slider_input(0.04, 1.0, 0.10, scale=1000)
         self.add_slider_row("muR factor:", self.muR_input, self.muR_slider)
 
         # --- PLOT BUTTON ---
@@ -106,3 +106,30 @@ class ParamsWidget(QWidget):
             "muM": self.muM_input.value(),
             "muR_factor": self.muR_input.value()
         }
+    
+    def set_values(self, data):
+        """Updates the UI widgets from a dictionary retrieved from QSettings"""
+        if not data or not isinstance(data, dict):
+            return
+
+        # Helper to set QLineEdit safely
+        def set_text(widget, key):
+            if key in data: widget.setText(str(data[key]))
+
+        # Helper to set QDoubleSpinBox safely
+        def set_val(widget, key):
+            if key in data: widget.setValue(float(data[key]))
+
+        # Update QLineEdits
+        set_text(self.sens_p_input, "sens_p")
+        set_text(self.Sd_input, "Sd")
+        set_text(self.Bl_input, "Bl")
+        set_text(self.Rms_input, "Rms")
+        set_text(self.Mms_input, "Mms")
+        set_text(self.Cmc_input, "Cmc")
+
+        # Update SpinBoxes (Sliders will update automatically via signals)
+        set_val(self.i2u_input, "i2u")
+        set_val(self.f_tgt_input, "f_tgt")
+        set_val(self.muM_input, "muM")
+        set_val(self.muR_input, "muR_factor")

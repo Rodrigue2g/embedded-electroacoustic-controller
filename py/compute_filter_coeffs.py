@@ -5,7 +5,7 @@ import control
 class Params:
     pass
 
-def compute_filter_coeffs(params):
+def compute_filter_coeffs(params, fs):
     scaling = params.Sd / params.Bl
     num_c = [
         scaling * params.a0,
@@ -14,7 +14,7 @@ def compute_filter_coeffs(params):
     ]
     den_c = [params.b0, params.b1, params.b2]
     Phi_c = control.tf(num_c, den_c)
-    Phi_d = control.c2d(Phi_c, params.ts_ctr, method='tustin')
+    Phi_d = control.c2d(Phi_c, 1/fs, method='tustin')
     bz = list(Phi_d.num[0][0])
     az = list(Phi_d.den[0][0])
 

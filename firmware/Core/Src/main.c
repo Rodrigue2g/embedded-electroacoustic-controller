@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "params.h"
+#include "generated_params.h"
 #include <stdbool.h>
 
 /* USER CODE END Includes */
@@ -423,7 +424,7 @@ static void MX_TIM6_Init(void)
    * MARK: Timer Setting (Fs)
    * Timer prescaler --> Sampling frequency setting
    */
-  htim6.Init.Period = 10799; //4319; // 539; //539; 2159
+  htim6.Init.Period = ARR; //10799; //4319; // 539; //539; 2159
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -644,35 +645,50 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   * @brief  GPIO External Interrupt Callback
   * This function is called automatically when the button is pressed.
   */
-// void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-// {
-//     if (GPIO_Pin == USER_Btn_Pin)
-//     {
-//         // sftw debouncing
-//         static uint32_t last_press_tick = 0;
-//         uint32_t current_tick = HAL_GetTick();
-
-//         if ((current_tick - last_press_tick) > 200)
-//         {
-//             control_enabled = !control_enabled;
-
-//             // Update LED for visual feedback (Green LED usually LD1)
-//             HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
-//                               control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
-
-//             // Optional: Reset filter state when enabling to avoid "pop"
-//             if (control_enabled) {
-//                 memset(biquad_state, 0, sizeof(biquad_state));
-//                 arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
-//             }
-
-//             last_press_tick = current_tick;
-//         }
-//     }
-// }
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
+  /**
+   * 3 Modes version
+   */
+  // callback1(GPIO_Pin);
+
+  /**
+   * 3 Modes version
+   */
+  callback3(GPIO_Pin);
+  
+  /**
+   * 6 Modes version
+   * Enable one at a time only!
+   */
+  // callback6(GPIO_Pin);
+}
+
+void callback1(uint16_t GPIO_Pin)
+{
     if (GPIO_Pin == USER_Btn_Pin)
+    {
+        // sftw debouncing
+        static uint32_t last_press_tick = 0;
+        uint32_t current_tick = HAL_GetTick();
+        if ((current_tick - last_press_tick) > 200)
+        {
+            control_enabled = !control_enabled;
+            HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, 
+                              control_enabled ? GPIO_PIN_SET : GPIO_PIN_RESET);
+            
+            if (control_enabled) {
+                memset(biquad_state, 0, sizeof(biquad_state));
+                arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
+            }
+            last_press_tick = current_tick;
+        }
+    }
+}
+
+void callback3(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == USER_Btn_Pin)
     {
         // Debouncing (200ms)
         static uint32_t last_press_tick = 0;
@@ -706,6 +722,82 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         }
     }
 }
+
+
+void callback6(uint16_t GPIO_Pin)
+{
+  if (GPIO_Pin == USER_Btn_Pin)
+    {
+        // Debouncing (200ms)
+        static uint32_t last_press_tick = 0;
+        uint32_t current_tick = HAL_GetTick();
+        if ((current_tick - last_press_tick) > 200)
+        {
+            current_mode++;
+            if (current_mode > 6) 
+            {
+                current_mode = 0;
+            }
+
+            switch (current_mode)
+            {
+            case 0:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+              break;
+            case 1:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+              break;
+            case 2:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+              break;
+            case 3:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+              break;
+            case 4:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_RESET);
+              break;
+            case 5:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_RESET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+              break;
+            case 6:
+              HAL_GPIO_WritePin(LD1_GPIO_Port, LD1_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+              HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, GPIO_PIN_SET);
+              break;
+            default:
+              break;
+            }
+
+            if (current_mode == 0)
+            {
+                control_enabled = false;
+            }
+            else
+            {
+                system_ready = false;
+                control_enabled = true;
+                // memset(biquad_state, 0, sizeof(biquad_state));
+                arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, coeff_lut[current_mode], biquad_state);
+                system_ready = true;
+            }
+
+            last_press_tick = current_tick;
+        }
+    }
+}
+
 /* USER CODE END 4 */
 
 /**

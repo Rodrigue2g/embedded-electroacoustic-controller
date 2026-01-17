@@ -1,16 +1,16 @@
 # logic_save.py
 import os
 import numpy as np
-from py.c2d import Params, compute_filter_coeffs
+from py.compute_filter_coeffs import compute_filter_coeffs
 from py.physics import get_physics_params
 
 
-def compute_coeffs_for_mode(ui_widget):
+def compute_coeffs_for_mode(ui_widget, fs):
     """Calculates coefficients for a single UI widget instance."""
     values = ui_widget.get_values()  
 
     p = get_physics_params(values)
-    bz, az = compute_filter_coeffs(p)
+    bz, az = compute_filter_coeffs(p, fs)
 
     # Normalization
     # if az[0] != 0:
@@ -28,18 +28,30 @@ def save_all_params(gui):
     if not gui.project_path:
         gui.log.append("Error: No project path selected.")
         return
-
+    
     try:
+        raw_fs = gui.global_fs.currentText()
+        global_fs = float(raw_fs)
+    except (ValueError, AttributeError) as e:
+        gui.log.append(f"❌ Error reading Sampling Frequency: {e}")
+        return
+    
+    try:
+        fs = global_fs
         # Access the widgets stored in the gui instance
-        coefs1, p1 = compute_coeffs_for_mode(gui.mode1_ui)
-        coefs2, p2 = compute_coeffs_for_mode(gui.mode2_ui)
-        coefs3, p3 = compute_coeffs_for_mode(gui.mode3_ui)
+        coefs1, p1 = compute_coeffs_for_mode(gui.mode1_ui, fs)
+        coefs2, p2 = compute_coeffs_for_mode(gui.mode2_ui, fs)
+        coefs3, p3 = compute_coeffs_for_mode(gui.mode3_ui, fs)
+
+        ARR = int((108000000 / fs) - 1)
 
         content = f"""/* * This file is auto-generated. DO NOT EDIT BY HAND.
  * Any manual changes will be overwritten.
  */
 #ifndef GENERATED_PARAMS_H
 #define GENERATED_PARAMS_H
+
+#define ARR {ARR}
 
 #define SENS_P {p1.sens_p:.12e}f
 #define SD {p1.Sd:.12e}f
