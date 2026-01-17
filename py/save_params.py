@@ -4,7 +4,6 @@ import numpy as np
 from py.compute_filter_coeffs import compute_filter_coeffs
 from py.physics import get_physics_params
 
-VERSION_TYPE = 3
 
 def compute_coeffs_for_mode(ui_widget, fs):
     """Calculates coefficients for a single UI widget instance."""
@@ -44,7 +43,7 @@ def save_all_params(gui):
         coefs2, p2 = compute_coeffs_for_mode(gui.mode2_ui, fs)
         coefs3, p3 = compute_coeffs_for_mode(gui.mode3_ui, fs)
 
-        if VERSION_TYPE == 6:
+        if gui.get_current_mode_count() == 6:
             coefs4, p4 = compute_coeffs_for_mode(gui.mode4_ui, fs)
             coefs5, p5 = compute_coeffs_for_mode(gui.mode5_ui, fs)
             coefs6, p6 = compute_coeffs_for_mode(gui.mode6_ui, fs)
@@ -52,7 +51,7 @@ def save_all_params(gui):
         # Sets the firmware timer period (ref to a clock of 108 MHz)
         ARR = int((108000000 / fs) - 1)
 
-        if VERSION_TYPE == 3:
+        if gui.get_current_mode_count() == 3:
             content = f"""/* 
  * This file is auto-generated. DO NOT EDIT BY HAND.
  * Any manual changes will be overwritten.
@@ -74,18 +73,12 @@ def save_all_params(gui):
 #define I2U_2 {p2.i2u:.12e}f
 #define I2U_3 {p3.i2u:.12e}f
 
-#define I2U_4 {p1.i2u:.12e}f
-#define I2U_5 {p1.i2u:.12e}f
-#define I2U_6 {p1.i2u:.12e}f
-
 // Mode 1 Macros (Legacy)
 #define B0 {coefs1[0]:.12e}f
 #define B1 {coefs1[1]:.12e}f
 #define B2 {coefs1[2]:.12e}f
 #define A1 {coefs1[3]:.12e}f
 #define A2 {coefs1[4]:.12e}f
-
-// Params params_arr[3];
 
 // Coefficient Arrays
 static float coeffs_m1[5] = {{ {coefs1[0]:.12e}f, {coefs1[1]:.12e}f, {coefs1[2]:.12e}f, {coefs1[3]:.12e}f, {coefs1[4]:.12e}f }};
@@ -98,7 +91,7 @@ static float i2u_lut[4] = {{ 0, I2U_1, I2U_2, I2U_3 }};
 
 #endif
 """
-        elif VERSION_TYPE == 6:
+        elif gui.get_current_mode_count() == 6:
             content = f"""/* 
  * This file is auto-generated. DO NOT EDIT BY HAND.
  * Any manual changes will be overwritten.
@@ -130,8 +123,6 @@ static float i2u_lut[4] = {{ 0, I2U_1, I2U_2, I2U_3 }};
 #define B2 {coefs1[2]:.12e}f
 #define A1 {coefs1[3]:.12e}f
 #define A2 {coefs1[4]:.12e}f
-
-// Params params_arr[6];
 
 // Coefficient Arrays
 static float coeffs_m1[5] = {{ {coefs1[0]:.12e}f, {coefs1[1]:.12e}f, {coefs1[2]:.12e}f, {coefs1[3]:.12e}f, {coefs1[4]:.12e}f }};

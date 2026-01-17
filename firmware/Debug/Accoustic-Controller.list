@@ -35,21 +35,21 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  15 .debug_rnglists 00000f29  00000000  00000000  00022800  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 16 .debug_macro  00029e97  00000000  00000000  00023729  2**0
+ 16 .debug_macro  00029e85  00000000  00000000  00023729  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 17 .debug_line   00016887  00000000  00000000  0004d5c0  2**0
+ 17 .debug_line   00016889  00000000  00000000  0004d5ae  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    00105a6e  00000000  00000000  00063e47  2**0
+ 18 .debug_str    00105a20  00000000  00000000  00063e37  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      000000b1  00000000  00000000  001698b5  2**0
+ 19 .comment      000000b1  00000000  00000000  00169857  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00005354  00000000  00000000  00169968  2**2
+ 20 .debug_frame  00005354  00000000  00000000  00169908  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 21 .debug_line_str 00000088  00000000  00000000  0016ecbc  2**0
+ 21 .debug_line_str 00000088  00000000  00000000  0016ec5c  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 22 .debug_loc    00000f7a  00000000  00000000  0016ed44  2**0
+ 22 .debug_loc    00000f7a  00000000  00000000  0016ece4  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 23 .debug_ranges 00000020  00000000  00000000  0016fcbe  2**0
+ 23 .debug_ranges 00000020  00000000  00000000  0016fc5e  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -374,7 +374,7 @@ Disassembly of section .text:
  8000562:	bf00      	nop
 
 08000564 <control_step>:
-
+// In-dev
 // Output Low-Pass Filter State
 static float lpf_out = 0.0f;
 // Cutoff frequency ~500Hz-1kHz depending on sample rate
@@ -391,6 +391,9 @@ void control_step(void) {
  8000574:	b2db      	uxtb	r3, r3
  8000576:	2b00      	cmp	r3, #0
  8000578:	f040 80f2 	bne.w	8000760 <control_step+0x1fc>
+    /**
+     * Retrieve Input from ADC
+     */
     HAL_ADC_Start(&hadc1);
  800057c:	487b      	ldr	r0, [pc, #492]	@ (800076c <control_step+0x208>)
  800057e:	f001 f801 	bl	8001584 <HAL_ADC_Start>
@@ -417,7 +420,8 @@ void control_step(void) {
  80005b2:	ed9f 7a71 	vldr	s14, [pc, #452]	@ 8000778 <control_step+0x214>
  80005b6:	ee67 7a87 	vmul.f32	s15, s15, s14
  80005ba:	edc7 7a03 	vstr	s15, [r7, #12]
-    // --- DC REMOVAL ---
+
+    // DC Removal
     if (first_run) {
  80005be:	4b6f      	ldr	r3, [pc, #444]	@ (800077c <control_step+0x218>)
  80005c0:	781b      	ldrb	r3, [r3, #0]
@@ -470,7 +474,9 @@ void control_step(void) {
  8000624:	485c      	ldr	r0, [pc, #368]	@ (8000798 <control_step+0x234>)
  8000626:	f004 fe6b 	bl	8005300 <arm_biquad_cascade_df2T_f32>
     
-    // Gain
+    /**
+     * Gain Stage
+     */
     float cmd_voltage = output_f32 * params.i2u;
  800062a:	4b58      	ldr	r3, [pc, #352]	@ (800078c <control_step+0x228>)
  800062c:	ed93 7a03 	vldr	s14, [r3, #12]
@@ -489,7 +495,7 @@ void control_step(void) {
  800064c:	b2db      	uxtb	r3, r3
  800064e:	2b03      	cmp	r3, #3
  8000650:	d80f      	bhi.n	8000672 <control_step+0x10e>
-        // cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
+        // cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; -- rm
         cmd_voltage = output_f32 * i2u_lut[current_mode];
  8000652:	4b52      	ldr	r3, [pc, #328]	@ (800079c <control_step+0x238>)
  8000654:	781b      	ldrb	r3, [r3, #0]
@@ -529,7 +535,9 @@ void control_step(void) {
  80006aa:	4b41      	ldr	r3, [pc, #260]	@ (80007b0 <control_step+0x24c>)
  80006ac:	edc3 7a00 	vstr	s15, [r3]
 
-    // --- OUTPUT ---
+    /**
+     * Output Conditioning
+     */
     float limit = (VREF / 2.0f) * 0.9f; 
  80006b0:	4b40      	ldr	r3, [pc, #256]	@ (80007b4 <control_step+0x250>)
  80006b2:	607b      	str	r3, [r7, #4]
@@ -602,7 +610,7 @@ void control_step(void) {
  8000762:	3718      	adds	r7, #24
  8000764:	46bd      	mov	sp, r7
  8000766:	bd80      	pop	{r7, pc}
- 8000768:	20000730 	.word	0x20000730
+ 8000768:	20000704 	.word	0x20000704
  800076c:	20000088 	.word	0x20000088
  8000770:	20000740 	.word	0x20000740
  8000774:	457ff000 	.word	0x457ff000
@@ -612,9 +620,9 @@ void control_step(void) {
  8000784:	3f7fbe77 	.word	0x3f7fbe77
  8000788:	3a83126f 	.word	0x3a83126f
  800078c:	20000698 	.word	0x20000698
- 8000790:	20000704 	.word	0x20000704
- 8000794:	20000708 	.word	0x20000708
- 8000798:	20000734 	.word	0x20000734
+ 8000790:	20000714 	.word	0x20000714
+ 8000794:	20000718 	.word	0x20000718
+ 8000798:	20000708 	.word	0x20000708
  800079c:	2000005c 	.word	0x2000005c
  80007a0:	2000004c 	.word	0x2000004c
  80007a4:	20000750 	.word	0x20000750
@@ -796,9 +804,9 @@ int main(void)
  80008b4:	bf00      	nop
  80008b6:	e7fd      	b.n	80008b4 <main+0xec>
  80008b8:	20000698 	.word	0x20000698
- 80008bc:	2000070c 	.word	0x2000070c
- 80008c0:	20000720 	.word	0x20000720
- 80008c4:	20000734 	.word	0x20000734
+ 80008bc:	2000071c 	.word	0x2000071c
+ 80008c0:	20000730 	.word	0x20000730
+ 80008c4:	20000708 	.word	0x20000708
  80008c8:	2000005c 	.word	0x2000005c
  80008cc:	2000005d 	.word	0x2000005d
  80008d0:	40020400 	.word	0x40020400
@@ -806,7 +814,7 @@ int main(void)
  80008d8:	20000088 	.word	0x20000088
  80008dc:	200000d0 	.word	0x200000d0
  80008e0:	200000e4 	.word	0x200000e4
- 80008e4:	20000730 	.word	0x20000730
+ 80008e4:	20000704 	.word	0x20000704
 
 080008e8 <SystemClock_Config>:
 /**
@@ -1911,10 +1919,10 @@ void callback3(uint16_t GPIO_Pin)
  8000f10:	2000005c 	.word	0x2000005c
  8000f14:	40020400 	.word	0x40020400
  8000f18:	2000005d 	.word	0x2000005d
- 8000f1c:	20000730 	.word	0x20000730
+ 8000f1c:	20000704 	.word	0x20000704
  8000f20:	2000003c 	.word	0x2000003c
- 8000f24:	20000720 	.word	0x20000720
- 8000f28:	20000734 	.word	0x20000734
+ 8000f24:	20000730 	.word	0x20000730
+ 8000f28:	20000708 	.word	0x20000708
 
 08000f2c <Error_Handler>:
 /**

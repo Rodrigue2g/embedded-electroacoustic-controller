@@ -62,8 +62,31 @@ UART_HandleTypeDef huart3;
 PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
+// Params params_arr[3]; // 6 -- rm
+
+// rm
+// float coeffs_mode1[5 * NUM_STAGES];
+// float coeffs_mode2[5 * NUM_STAGES];
+// float coeffs_mode3[5 * NUM_STAGES];
+// float* coeff_lut[4] = { NULL, coeffs_mode1, coeffs_mode2, coeffs_mode3 };
+
+
+/**
+ * Global control parameters structure
+ */
 Params params;
-// Params params_arr[3]; // 6
+
+/**
+ * Global system parameters
+ */
+volatile uint8_t current_mode = 1;
+volatile bool control_enabled = true;
+volatile bool system_ready = false;
+
+/**
+ * Filter instance
+ */
+arm_biquad_cascade_df2T_instance_f32 S;
 
 float input_f32;
 float output_f32;
@@ -71,18 +94,10 @@ float output_f32;
 float biquad_coeffs[5];
 float biquad_state[4];
 
-// float coeffs_mode1[5 * NUM_STAGES];
-// float coeffs_mode2[5 * NUM_STAGES];
-// float coeffs_mode3[5 * NUM_STAGES];
-
-// float* coeff_lut[4] = { NULL, coeffs_mode1, coeffs_mode2, coeffs_mode3 };
-
-volatile uint8_t current_mode = 1;
-volatile bool control_enabled = true;
-volatile bool system_ready = false;
-
-arm_biquad_cascade_df2T_instance_f32 S;
-
+/**
+ * Global control variables
+ * These variables are defined globally to be monitored through SWD
+ */
 uint32_t ADC_val = 0;
 uint32_t dac_value = 0;
 float phi_out = 0;
@@ -92,18 +107,23 @@ float Vin = 0;
 static float dc_bias = 0.0f;
 static uint8_t first_run = 1;
 
+// In-dev
 // Output Low-Pass Filter State
 static float lpf_out = 0.0f;
 // Cutoff frequency ~500Hz-1kHz depending on sample rate
 #define LPF_ALPHA 0.9f  
 void control_step(void) {
     if (!system_ready) return;
+    /**
+     * Retrieve Input from ADC
+     */
     HAL_ADC_Start(&hadc1);
     HAL_ADC_PollForConversion(&hadc1, HAL_MAX_DELAY);
     ADC_val = HAL_ADC_GetValue(&hadc1);
     HAL_ADC_Stop(&hadc1);
     float Vin_raw = (ADC_val / 4095.0f) * VREF;
-    // --- DC REMOVAL ---
+
+    // DC Removal
     if (first_run) {
         dc_bias = Vin_raw;
         first_run = 0;
@@ -119,10 +139,12 @@ void control_step(void) {
      */
     arm_biquad_cascade_df2T_f32(&S, &input_f32, &output_f32, 1);
     
-    // Gain
+    /**
+     * Gain Stage
+     */
     float cmd_voltage = output_f32 * params.i2u;
     if (current_mode > 0 && current_mode <= 3) {
-        // cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
+        // cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; -- rm
         cmd_voltage = output_f32 * i2u_lut[current_mode];
     } else {
         cmd_voltage = 0.0f;
@@ -132,7 +154,9 @@ void control_step(void) {
     lpf_out = lpf_out + LPF_ALPHA * (cmd_voltage - lpf_out);
     Vout = cmd_voltage * 0.1f;
 
-    // --- OUTPUT ---
+    /**
+     * Output Conditioning
+     */
     float limit = (VREF / 2.0f) * 0.9f; 
     if (Vout > limit) Vout = limit;
     if (Vout < -limit) Vout = -limit;
@@ -203,6 +227,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   init_params(&params);
+  // rm
   // if (VERSION_TYPE == 3) {
   //     init_params_array(params_arr, 3, init_params_m3);
   // } else if (VERSION_TYPE == 3) {

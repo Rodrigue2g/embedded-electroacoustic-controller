@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QTextEdit, QFileDialog, QLabel, QTabWidget,
     QMenuBar, QMenu, QGroupBox, QComboBox, QHBoxLayout, QFrame
 )
-from PySide6.QtGui import QAction
+from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QMessageBox
 from py.c2d import Params, compute_filter_coeffs
@@ -25,7 +25,7 @@ MODE_TYPE = 3
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("EAR Builer - 3 Modes")
+        self.setWindowTitle("EAR Builer")
         self.settings = QSettings("EPFL-LWE", "ear-builder")
 
         # Main Layout
@@ -110,6 +110,18 @@ class GUI(QWidget):
         # Create Menu Bar
         self.menu_bar = QMenuBar(self)
         
+        mode_menu = self.menu_bar.addMenu("View")
+        self.mode_action_group = QActionGroup(self) # Ensure only one is selected
+        
+        for count in [3, 6]:
+            action = QAction(f"{count} Modes", self)
+            action.setCheckable(True)
+            action.setData(count)
+            if count == 3: action.setChecked(True) # Default
+            action.triggered.connect(self.change_mode_count)
+            self.mode_action_group.addAction(action)
+            mode_menu.addAction(action)
+
         # Settings Menu
         settings_menu = self.menu_bar.addMenu("Settings")
 
@@ -135,6 +147,33 @@ class GUI(QWidget):
 
         # Add menu to layout
         self.main_layout.setMenuBar(self.menu_bar)
+
+    def change_mode_count(self):
+        action = self.sender()
+        new_count = action.data()
+        
+        # 1. Update the title/internal state
+        self.setWindowTitle(f"EAR Builder - {new_count} Modes")
+        
+        # 2. Clear current tabs
+        self.tabs.clear()
+        
+        # 3. Re-add tabs based on selection
+        # We always add the first 3
+        self.tabs.addTab(self.mode1_ui, "Mode 1")
+        self.tabs.addTab(self.mode2_ui, "Mode 2")
+        self.tabs.addTab(self.mode3_ui, "Mode 3")
+        
+        if new_count == 6:
+            self.tabs.addTab(self.mode4_ui, "Mode 4")
+            self.tabs.addTab(self.mode5_ui, "Mode 5")
+            self.tabs.addTab(self.mode6_ui, "Mode 6")
+            
+        self.log.append(f"🔄 Switched UI to {new_count} Mode configuration.")
+
+    def get_current_mode_count(self):
+        """Helper to see if we are in 3 or 6 mode state"""
+        return self.tabs.count()
 
     def setup_global_settings(self):
         group = QGroupBox("Global Configuration")
@@ -224,7 +263,7 @@ class GUI(QWidget):
         self.settings.setValue("mode2_data", self.mode2_ui.get_values())
         self.settings.setValue("mode3_data", self.mode3_ui.get_values())
 
-        if MODE_TYPE == 6:
+        if self.get_current_mode_count() == 6:
             self.settings.setValue("mode4_data", self.mode4_ui.get_values())
             self.settings.setValue("mode5_data", self.mode5_ui.get_values())
             self.settings.setValue("mode6_data", self.mode6_ui.get_values())

@@ -19,18 +19,12 @@
 #define I2U_2 1.000000000000e+02f
 #define I2U_3 1.000000000000e+02f
 
-#define I2U_4 1.000000000000e+02f
-#define I2U_5 1.000000000000e+02f
-#define I2U_6 1.000000000000e+02f
-
 // Mode 1 Macros (Legacy)
 #define B0 -3.118062580219e-03f
 #define B1 5.777957096885e-03f
 #define B2 -2.893029328615e-03f
 #define A1 1.954338268883e+00f
 #define A2 -9.730991998799e-01f
-
-// Params params_arr[3];
 
 // Coefficient Arrays
 static float coeffs_m1[5] = { -3.118062580219e-03f, 5.777957096885e-03f, -2.893029328615e-03f, 1.954338268883e+00f, -9.730991998799e-01f };
