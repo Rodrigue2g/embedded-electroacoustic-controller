@@ -40,7 +40,7 @@ class ParamsWidget(QWidget):
         self.add_slider_row("f_target (Hz):", self.f_tgt_input, self.f_tgt_slider)
 
         # muM
-        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, 0.3, scale=1000)
+        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, 0.30, scale=1000)
         self.add_slider_row("muM:", self.muM_input, self.muM_slider)
 
         # muR
@@ -112,11 +112,9 @@ class ParamsWidget(QWidget):
         if not data or not isinstance(data, dict):
             return
 
-        # Helper to set QLineEdit safely
         def set_text(widget, key):
             if key in data: widget.setText(str(data[key]))
 
-        # Helper to set QDoubleSpinBox safely
         def set_val(widget, key):
             if key in data: widget.setValue(float(data[key]))
 

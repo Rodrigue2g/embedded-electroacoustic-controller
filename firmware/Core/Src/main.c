@@ -63,7 +63,7 @@ PCD_HandleTypeDef hpcd_USB_OTG_FS;
 
 /* USER CODE BEGIN PV */
 Params params;
-Params params_arr[3];
+// Params params_arr[3]; // 6
 
 float input_f32;
 float output_f32;
@@ -71,11 +71,11 @@ float output_f32;
 float biquad_coeffs[5];
 float biquad_state[4];
 
-float coeffs_mode1[5 * NUM_STAGES];
-float coeffs_mode2[5 * NUM_STAGES];
-float coeffs_mode3[5 * NUM_STAGES];
+// float coeffs_mode1[5 * NUM_STAGES];
+// float coeffs_mode2[5 * NUM_STAGES];
+// float coeffs_mode3[5 * NUM_STAGES];
 
-float* coeff_lut[4] = { NULL, coeffs_mode1, coeffs_mode2, coeffs_mode3 };
+// float* coeff_lut[4] = { NULL, coeffs_mode1, coeffs_mode2, coeffs_mode3 };
 
 volatile uint8_t current_mode = 1;
 volatile bool control_enabled = true;
@@ -122,7 +122,8 @@ void control_step(void) {
     // Gain
     float cmd_voltage = output_f32 * params.i2u;
     if (current_mode > 0 && current_mode <= 3) {
-        cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
+        // cmd_voltage = output_f32 * params_arr[current_mode - 1].i2u; // * OUTPUT_GAIN; 
+        cmd_voltage = output_f32 * i2u_lut[current_mode];
     } else {
         cmd_voltage = 0.0f;
     }
@@ -155,7 +156,9 @@ static void MX_ADC1_Init(void);
 static void MX_TIM6_Init(void);
 static void MX_DAC_Init(void);
 /* USER CODE BEGIN PFP */
-
+void callback1(uint16_t GPIO_Pin);
+void callback3(uint16_t GPIO_Pin);
+void callback6(uint16_t GPIO_Pin);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -200,17 +203,23 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   init_params(&params);
-  init_params_array(params_arr, 3, init_params_m3);
-  // Single Params version
+  // if (VERSION_TYPE == 3) {
+  //     init_params_array(params_arr, 3, init_params_m3);
+  // } else if (VERSION_TYPE == 3) {
+  //     init_params_array(params_arr, 6, init_params_m6);
+  // }
+
+  // Single Params version -- rm?
   biquad_coeffs[0] = params.bz[0];
   biquad_coeffs[1] = params.bz[1];
   biquad_coeffs[2] = params.bz[2];
-  biquad_coeffs[3] = -params.az[1];   // sign is already fliped during params construction
+  biquad_coeffs[3] = -params.az[1];
   biquad_coeffs[4] = -params.az[2];
   memset(biquad_state, 0, sizeof(biquad_state));
   arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, biquad_coeffs, biquad_state);
 
-  init_coefs(coeffs_mode1, coeffs_mode2, coeffs_mode3);
+  // rm
+  // init_coefs(coeffs_mode1, coeffs_mode2, coeffs_mode3);
 
   /**
    * Init with Mode 1
@@ -223,8 +232,9 @@ int main(void)
   memset(biquad_state, 0, sizeof(biquad_state));
   arm_biquad_cascade_df2T_init_f32(&S, NUM_STAGES, coeff_lut[current_mode], biquad_state);
 
-  // update_bandpass_filter(TARGET_FREQ, BANDWIDTH);
-
+  /**
+   * Timer interupt
+   */
   HAL_NVIC_SetPriority(TIM6_DAC_IRQn, 0, 0); // Set high priority
   HAL_NVIC_EnableIRQ(TIM6_DAC_IRQn);         // Enable the interrupt
 
@@ -647,21 +657,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
   */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-  /**
-   * 3 Modes version
-   */
-  // callback1(GPIO_Pin);
-
-  /**
-   * 3 Modes version
-   */
-  callback3(GPIO_Pin);
-  
-  /**
-   * 6 Modes version
-   * Enable one at a time only!
-   */
-  // callback6(GPIO_Pin);
+  switch (VERSION_TYPE)
+  {
+  case 1:
+    /**
+     * Simple 1 Mode version (Legacy)
+     */
+    callback1(GPIO_Pin);
+    break;
+  case 3:
+    /**
+     * 3 Modes version
+     */
+    callback3(GPIO_Pin);
+    break;
+  case 6:
+    /**
+     * 6 Modes version
+     * Enable one at a time only!
+     */
+    callback6(GPIO_Pin);
+    break; 
+    
+  default:
+    break;
+  }
 }
 
 void callback1(uint16_t GPIO_Pin)

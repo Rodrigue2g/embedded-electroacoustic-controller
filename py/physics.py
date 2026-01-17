@@ -14,33 +14,25 @@ def get_physics_params(values):
     p.Mms = values["Mms"]
     p.Cmc = values["Cmc"]
 
-    # Default value but we now use a global user var
-    p.ts_ctr = 100e-6 #40e-6 #50e-6
+    # DEPRECATED
+    # We now use a global user var (set in the GUI)
+    # Look for `global_fs` instead
+    p.ts_ctr = None #100e-6 #40e-6 #50e-6
 
     p.f_tgt = values["f_tgt"]
     
     p.muM = values["muM"]
     p.muR = values["muR_factor"] * p.rho0 * p.c0 * p.Sd / p.Rms
     p.muC = p.muM * ((2* np.pi * p.f_tgt)**2 *p.Mms * p.Cmc)
-    #p.muC = (2*np.pi * p.f_tgt)**2 * p.Mms * p.Cmc
 
     # Denominator
-    # p.b2 = p.muM * p.Mms * p.Cmc
     p.b0 = p.muM * p.Mms * p.Cmc
     p.b1 = p.muR * p.Rms * p.Cmc
-    # p.b0 = p.muC
     p.b2 = p.muC
 
     # Numerator
-    # p.a2 = (p.muM - 1.0) * p.Mms * p.Cmc
     p.a0 = (p.muM - 1.0) * p.Mms * p.Cmc
     p.a1 = (p.muR - 1.0) * p.Rms * p.Cmc
-    # p.a0 = (p.muC - 1.0)
     p.a2 = (p.muC - 1.0)
-
-    # scaling_factor = p.Sd / p.Bl
-    # p.a2 = a2_raw * scaling_factor
-    # p.a1 = a1_raw * scaling_factor
-    # p.a0 = 1 # a0_raw * scaling_factor
 
     return p

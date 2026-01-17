@@ -20,6 +20,8 @@ import shutil
 from pathlib import Path
 import platform
 
+MODE_TYPE = 3
+
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -41,15 +43,32 @@ class GUI(QWidget):
         self.mode1_ui = ParamsWidget("Mode 1 (Default)")
         self.mode2_ui = ParamsWidget("Mode 2")
         self.mode3_ui = ParamsWidget("Mode 3")
-        
+        self.mode4_ui = ParamsWidget("Mode 4")
+        self.mode5_ui = ParamsWidget("Mode 5")
+        self.mode6_ui = ParamsWidget("Mode 6")
+
         # Connect plot requests
         self.mode1_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 1"))
         self.mode2_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 2"))
         self.mode3_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 3"))
         
-        self.tabs.addTab(self.mode1_ui, "Mode 1")
-        self.tabs.addTab(self.mode2_ui, "Mode 2")
-        self.tabs.addTab(self.mode3_ui, "Mode 3")
+        self.mode4_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 4"))
+        self.mode5_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 5"))
+        self.mode6_ui.request_plot.connect(lambda v: self.run_plot(v, "Mode 6"))
+
+
+        if MODE_TYPE == 3:
+            self.tabs.addTab(self.mode1_ui, "Mode 1")
+            self.tabs.addTab(self.mode2_ui, "Mode 2")
+            self.tabs.addTab(self.mode3_ui, "Mode 3")
+        elif MODE_TYPE == 6:
+            self.tabs.addTab(self.mode1_ui, "Mode 1")
+            self.tabs.addTab(self.mode2_ui, "Mode 2")
+            self.tabs.addTab(self.mode3_ui, "Mode 3")
+            self.tabs.addTab(self.mode4_ui, "Mode 4")
+            self.tabs.addTab(self.mode5_ui, "Mode 5")
+            self.tabs.addTab(self.mode6_ui, "Mode 6")
+
         self.main_layout.addWidget(self.tabs)
 
         # === SAVE AS DEFAULTS ===
@@ -197,21 +216,26 @@ class GUI(QWidget):
         is_visible = self.toggle_advanced_action.isChecked()
         self.advanced_container.setVisible(is_visible)
 
-
     # Settings Persistecy
     def save_settings(self):
         """Saves current UI state to persistent storage"""
-        self.settings.setValue("fs_index", self.combo_fs.currentIndex())
+        self.settings.setValue("fs_index", self.global_fs.currentIndex())
         self.settings.setValue("mode1_data", self.mode1_ui.get_values())
         self.settings.setValue("mode2_data", self.mode2_ui.get_values())
         self.settings.setValue("mode3_data", self.mode3_ui.get_values())
+
+        if MODE_TYPE == 6:
+            self.settings.setValue("mode4_data", self.mode4_ui.get_values())
+            self.settings.setValue("mode5_data", self.mode5_ui.get_values())
+            self.settings.setValue("mode6_data", self.mode6_ui.get_values())
+
         self.log.append("✔️ Current parameters saved as User Defaults.")
 
     def load_settings(self):
         """Loads settings from storage if they exist"""
         fs_idx = self.settings.value("fs_index")
         if fs_idx is not None:
-            self.combo_fs.setCurrentIndex(int(fs_idx))
+            self.global_fs.setCurrentIndex(int(fs_idx))
 
         m1 = self.settings.value("mode1_data")
         if m1: self.mode1_ui.set_values(m1)
@@ -222,12 +246,22 @@ class GUI(QWidget):
         m3 = self.settings.value("mode3_data")
         if m3: self.mode3_ui.set_values(m3)
 
+        m4 = self.settings.value("mode4_data")
+        if m4: self.mode4_ui.set_values(m4)
+            
+        m5 = self.settings.value("mode5_data")
+        if m5: self.mode5_ui.set_values(m5)
+            
+        m6 = self.settings.value("mode6_data")
+        if m6: self.mode6_ui.set_values(m6)
+
+
 
     def setup_persistence_actions(self):
         group = QGroupBox("User Preferences")
         layout = QHBoxLayout()
         
-        btn_set_default = QPushButton("💾 Set Current values as Default (for this Mode only)")
+        btn_set_default = QPushButton("💾 Set Current values as Default") # (for this Mode only)
         btn_set_default.clicked.connect(self.save_settings)
         
         layout.addWidget(btn_set_default)
@@ -518,7 +552,7 @@ class GUI(QWidget):
         """Clears saved settings and resets UI to hardcoded defaults"""
         self.settings.clear()
         # Reset UI manually to hardcoded values
-        self.combo_fs.setCurrentText("25000")
+        self.global_fs.setCurrentText("10000")
         # Trigger your internal reset logic for ParamsWidgets
         # e.g., self.mode1_ui.reset_to_hardcoded()
         # We should call the setCurrentText here
