@@ -17,17 +17,18 @@ class ParamsWidget(QWidget):
         self.group_box.setLayout(self.layout)
         
         # --- INPUTS ---
-        self.sens_p_input = QLineEdit(str(FACTORY_DEFAULTS.get("sens_p", "37.1e-3")))
-        self.Sd_input     = QLineEdit(str(FACTORY_DEFAULTS.get("Sd", "24e-4")))
-        self.Bl_input     = QLineEdit(str(FACTORY_DEFAULTS.get("Bl", "1.8656")))
-        self.Rms_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Rms", "0.74")))
-        self.Mms_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Mms", "0.0012")))
-        self.Cmc_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Cmc", "1.3638e-4")))
+        self.sens_p_input = QLineEdit(str(FACTORY_DEFAULTS.get("sens_p")))
+        self.Sd_input     = QLineEdit(str(FACTORY_DEFAULTS.get("Sd")))
+        self.Bl_input     = QLineEdit(str(FACTORY_DEFAULTS.get("Bl")))
+        self.Rms_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Rms")))
+        self.Mms_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Mms")))
+        self.Cmc_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Cmc")))
 
         self.layout.addRow("sens_p:", self.sens_p_input)
         
         # i2u
-        self.i2u_input, self.i2u_slider = self.create_slider_input(0, 2500, 100)
+        i2u_default = FACTORY_DEFAULTS.get("i2u")
+        self.i2u_input, self.i2u_slider = self.create_slider_input(0, 2500, i2u_default)
         self.add_slider_row("i2u:", self.i2u_input, self.i2u_slider)
 
         self.layout.addRow("Sd (m²):",  self.Sd_input)
@@ -37,17 +38,17 @@ class ParamsWidget(QWidget):
         self.layout.addRow("Cmc (m/N):", self.Cmc_input)
 
         # f_target
-        f_tgt_default = FACTORY_DEFAULTS.get("f_tgt", 220)
+        f_tgt_default = FACTORY_DEFAULTS.get("f_tgt")
         self.f_tgt_input, self.f_tgt_slider = self.create_slider_input(0, 1000, f_tgt_default)
         self.add_slider_row("f_target (Hz):", self.f_tgt_input, self.f_tgt_slider)
 
         # muM
-        muM_default = FACTORY_DEFAULTS.get("muM", 0.30)
+        muM_default = FACTORY_DEFAULTS.get("muM")
         self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, muM_default, scale=1000)
         self.add_slider_row("muM:", self.muM_input, self.muM_slider)
 
         # muR
-        muR_default = FACTORY_DEFAULTS.get("muR_factor", 0.10)
+        muR_default = FACTORY_DEFAULTS.get("muR_factor")
         self.muR_input, self.muR_slider = self.create_slider_input(0.04, 1.0, muR_default, scale=1000)
         self.add_slider_row("muR factor:", self.muR_input, self.muR_slider)
 

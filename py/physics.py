@@ -16,7 +16,7 @@ def get_physics_params(values):
 
     # DEPRECATED
     # We now use a global user var (set in the GUI)
-    # Look for `global_fs` instead
+    # Look for `global_fs` instead (`gui.get_selected_fs()`)
     p.ts_ctr = None #100e-6 #40e-6 #50e-6
 
     p.f_tgt = values["f_tgt"]

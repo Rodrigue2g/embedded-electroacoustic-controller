@@ -1,14 +1,13 @@
 import numpy as np
 import scipy.signal as signal
 import matplotlib.pyplot as plt
-from py.c2d import compute_filter_coeffs
+from py.compute_filter_coeffs import compute_filter_coeffs
 from py.physics import get_physics_params
 
-def handle_plot(self, values, mode_name):
+def handle_plot(self, values, mode_name, fs):
     self.log.append(f"Generating validation plot for {mode_name}...")
     
     p = get_physics_params(values)
-    fs = 1.0 / p.ts_ctr
     
     # Comtinuous sys H(s)
     # H(s) = num_c / den_c
@@ -29,7 +28,7 @@ def handle_plot(self, values, mode_name):
         y_cont = np.zeros_like(x)
 
     # Discrete tf H(z)
-    bz, az = compute_filter_coeffs(p)
+    bz, az = compute_filter_coeffs(p, fs)
     y_disc = signal.lfilter(bz, az, x)
 
     # Use hanning window to reduce spectral leakage

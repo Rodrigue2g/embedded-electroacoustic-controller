@@ -312,7 +312,7 @@ class GUI(QWidget):
     def get_selected_fs(self):
         """Helper to get current Sampling Freq as float"""
         try:
-            return float(self.combo_fs.currentText())
+            return float(self.global_fs.currentText())
         except ValueError:
             return 25000.0
         
@@ -419,7 +419,8 @@ class GUI(QWidget):
         Wrapper for the plotting logic.
         We pass 'self' so the external function can access self.log
         """
-        handle_plot(self, values, mode_name)
+        fs = self.get_selected_fs() 
+        handle_plot(self, values, mode_name, fs)
 
     def run_save(self):
         """

@@ -3,16 +3,18 @@
 # a `factory reset`
 ##
 FACTORY_DEFAULTS = {
+    # Line input
     "sens_p": "37.1e-3",
+    "Sd": "24e-4",
+    "Bl": "1.8656",
+    "Rms": "0.74",
+    "Mms": "0.0012",
+    "Cmc": "1.3638e-4",
+    # Sliders
     "i2u": 100.0,
-    "Sd": "23.5e-4",
-    "Bl": "1.806225",
-    "Rms": "0.5186787",
-    "Mms": "0.001",
-    "Cmc": "0.0001",
-    "f_tgt": 200.0,
-    "muM": 1.0,
-    "muR_factor": 0.05
+    "f_tgt": 220.0,
+    "muM": 0.30,
+    "muR_factor": 0.10
 }
 
 ##

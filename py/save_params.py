@@ -30,10 +30,10 @@ def save_all_params(gui):
         return
     
     try:
-        raw_fs = gui.global_fs.currentText()
+        raw_fs = gui.get_selected_fs()
         global_fs = float(raw_fs)
     except (ValueError, AttributeError) as e:
-        gui.log.append(f"❌ Error reading Sampling Frequency: {e}")
+        gui.log.append(f"❗️ Error reading Sampling Frequency: {e}")
         return
     
     try:
@@ -150,7 +150,7 @@ static float i2u_lut[7] = {{ 0, I2U_1, I2U_2, I2U_3, I2U_4, I2U_5, I2U_6 }};
         with open(header_path, "w") as f:
             f.write(content)
         
-        gui.log.append(f"✔ Successfully saved parameters to:\n{header_path}\n")
+        gui.log.append(f"✔️ Successfully saved parameters to:\n{header_path}\n")
 
     except Exception as e:
         gui.log.append(f"❌ Error saving parameters: {e}\n")
