@@ -1,6 +1,8 @@
 import os
 import sys, subprocess
 import platform
+import shutil
+import platform
 import scipy.signal as signal
 import matplotlib.pyplot as plt
 from PySide6.QtWidgets import (
@@ -9,18 +11,23 @@ from PySide6.QtWidgets import (
     QMenuBar, QMenu, QGroupBox, QComboBox, QHBoxLayout, QFrame
 )
 from PySide6.QtGui import QAction, QActionGroup
-from PySide6.QtCore import QSettings
-from PySide6.QtWidgets import QMessageBox
-from py.toolchain import ToolchainManager
-from py.ui_components import ParamsWidget
+from PySide6.QtCore import Qt, QSettings
+from PySide6.QtWidgets import QMessageBox, QProgressDialog
+from pathlib import Path
 from py.plot import handle_plot
+from py.progress import ProgressOverlay
+from py.ui_components import ParamsWidget
+from py.toolchain import ToolchainManager
 from py.save_params import save_all_params
 from py.factory_settings import perform_factory_reset, DEFAULT_FS
-import shutil
-from pathlib import Path
-import platform
 
+
+##
+# Default number of modes for the GUI 
+# Switch between: [3,6]
+##
 MODE_TYPE = 3
+
 
 class GUI(QWidget):
     def __init__(self):
@@ -117,7 +124,7 @@ class GUI(QWidget):
             action = QAction(f"{count} Modes", self)
             action.setCheckable(True)
             action.setData(count)
-            if count == 3: action.setChecked(True) # Default
+            if count == MODE_TYPE: action.setChecked(True) # Default
             action.triggered.connect(self.change_mode_count)
             self.mode_action_group.addAction(action)
             mode_menu.addAction(action)
@@ -135,7 +142,6 @@ class GUI(QWidget):
         self.action_factory_reset.triggered.connect(self.confirm_factory_reset)
         settings_menu.addAction(self.action_factory_reset)
 
-
         # Debug Menu
         debug_menu = self.menu_bar.addMenu("Debug")
         
@@ -152,14 +158,10 @@ class GUI(QWidget):
         action = self.sender()
         new_count = action.data()
         
-        # 1. Update the title/internal state
         self.setWindowTitle(f"EAR Builder - {new_count} Modes")
         
-        # 2. Clear current tabs
         self.tabs.clear()
         
-        # 3. Re-add tabs based on selection
-        # We always add the first 3
         self.tabs.addTab(self.mode1_ui, "Mode 1")
         self.tabs.addTab(self.mode2_ui, "Mode 2")
         self.tabs.addTab(self.mode3_ui, "Mode 3")
@@ -240,11 +242,6 @@ class GUI(QWidget):
         path_layout.addWidget(self.status_label)
         layout.addLayout(path_layout)
 
-        # Clean Build
-        # self.btn_clean = QPushButton("Clean Build Folder")
-        # self.btn_clean.clicked.connect(self.clean_project)
-        # layout.addWidget(self.btn_clean)
-
         self.advanced_container.setLayout(layout)
 
         # Hidden by default
@@ -306,7 +303,6 @@ class GUI(QWidget):
         layout.addWidget(btn_set_default)
         group.setLayout(layout)
         
-        # self.main_layout.insertWidget(4, group)
         self.main_layout.addWidget(group)
 
     def get_selected_fs(self):
@@ -437,11 +433,17 @@ class GUI(QWidget):
             cwd = self.project_path
 
         self.log.append(f"> {cmd}\n")
+        
+        # Progress 
+        if not hasattr(self, 'overlay'):
+            self.overlay = ProgressOverlay(self)
+        
+        self.overlay.resize(self.size())
+        self.overlay.start()
+        QApplication.processEvents()
 
         env = self.toolchain.get_env()
-        # print("env[PATH]")
-        # print(env["PATH"])
-        
+
         process = subprocess.Popen(
             cmd,
             shell=True,
@@ -452,9 +454,17 @@ class GUI(QWidget):
             env=env
         )
 
-        for line in process.stdout:
+    #     for line in process.stdout:
+    #         self.log.append(line)
+        while True:
+            line = process.stdout.readline()
+            if not line:
+                break
             self.log.append(line)
+            QApplication.processEvents()
+
         process.wait()
+        self.overlay.stop()
         self.log.append(f"\nExit code: {process.returncode}\n")
 
     def detect_os(self):
@@ -467,9 +477,6 @@ class GUI(QWidget):
             return "other"
         
     def run_full_build(self):
-        # await self.run_save()
-        # await self.build_project()
-        # await self.flash_project()
         self.run_save()
         self.build_project()
         self.flash_project()
@@ -537,12 +544,6 @@ class GUI(QWidget):
 
         os_type = self.detect_os()
 
-        # cmd = "openocd -f interface/stlink.cfg -f target/stm32f4x.cfg -c \"program build/firmware.elf verify reset exit\""
-        # if getattr(sys, "frozen", False):
-        #     elf = os.path.join(self.project_path, "Accoustic-Controller/Debug/Accoustic-Controller.elf")
-        # else:
-        #     elf = os.path.abspath("firmware/Debug/Accoustic-Controller.elf")
-
         if os_type == "mac":
             cmd = (
             'openocd '
@@ -560,25 +561,12 @@ class GUI(QWidget):
             )
 
         elif os_type == "win":
-            # cmd = (
-            #     'openocd '
-            #     '-f interface/stlink.cfg '
-            #     '-f target/stm32f7x.cfg '
-            #     f'-c "program {elf} verify reset exit"'
-            # )
             cmd = (
                 'STM32_Programmer_CLI.exe '
                 '-c port=SWD mode=UR '
                 f'-w "{elf}" 0x08000000 '
                 '-v -rst'
             )
-            # cube_cli = r'C:\Program Files\STMicroelectronics\STM32Cube\STM32CubeProgrammer\bin\STM32_Programmer_CLI.exe'
-            # cmd = (
-            #     f'"{cube_cli}" '
-            #     '-c port=SWD '
-            #     f'-w "{elf}" '
-            #     '-v -rst'
-            # )
 
         else:
             self.log.append("Unsupported OS for flashing.")
