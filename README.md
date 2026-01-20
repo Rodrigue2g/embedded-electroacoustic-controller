@@ -18,7 +18,6 @@ The firmware is designed to be used in conjunction with a host-side graphical in
 
 The repository is organized to clearly separate **embedded firmware**, **application logic**, and **build toolchain**:
 
-    .
     ├── .github/
     │   └── workflows/
     │       └── build-installers.yml
