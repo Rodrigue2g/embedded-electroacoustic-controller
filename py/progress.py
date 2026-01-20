@@ -18,7 +18,7 @@ class ProgressOverlay(QWidget):
 
     def start(self):
         self.show()
-        self.timer.start(30) # Rotation Speed
+        self.timer.start(35) # Rotation Speed
 
     def stop(self):
         self.timer.stop()

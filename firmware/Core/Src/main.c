@@ -278,7 +278,6 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    // control_step();
   }
   /* USER CODE END 3 */
 }
@@ -387,9 +386,6 @@ static void MX_ADC1_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN ADC1_Init 2 */
-
-//  HAL_NVIC_SetPriority(ADC_IRQn, 0, 0);
-//  HAL_NVIC_EnableIRQ(ADC_IRQn);
 
   /* USER CODE END ADC1_Init 2 */
 
@@ -666,6 +662,7 @@ static inline void itm_u16(uint16_t v){
 
 /* IRQ handler */
 void ADC_IRQHandler(void) { HAL_ADC_IRQHandler(&hadc1); }
+
 /**
   * @brief  Period elapsed callback in non-blocking mode
   * @param  htim TIM handle
@@ -676,6 +673,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim) {
         control_step();
     }
 }
+
 /**
   * @brief  GPIO External Interrupt Callback
   * This function is called automatically when the button is pressed.
@@ -699,7 +697,6 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   case 6:
     /**
      * 6 Modes version
-     * Enable one at a time only!
      */
     callback6(GPIO_Pin);
     break; 

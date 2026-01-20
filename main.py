@@ -20,7 +20,7 @@ from py.ui_components import ParamsWidget
 from py.toolchain import ToolchainManager
 from py.save_params import save_all_params
 from py.factory_settings import perform_factory_reset, DEFAULT_FS
-
+from py.strings import LOG_MESSAGES, UI_TEXT
 
 ##
 # Default number of modes for the GUI 
@@ -171,7 +171,7 @@ class GUI(QWidget):
             self.tabs.addTab(self.mode5_ui, "Mode 5")
             self.tabs.addTab(self.mode6_ui, "Mode 6")
             
-        self.log.append(f"🔄 Switched UI to {new_count} Mode configuration.")
+        self.log.append(LOG_MESSAGES["MODE_SWITCH"].format(new_count))
 
     def get_current_mode_count(self):
         """Helper to see if we are in 3 or 6 mode state"""
@@ -265,7 +265,7 @@ class GUI(QWidget):
             self.settings.setValue("mode5_data", self.mode5_ui.get_values())
             self.settings.setValue("mode6_data", self.mode6_ui.get_values())
 
-        self.log.append("✔️ Current parameters saved as User Defaults.")
+        self.log.append(LOG_MESSAGES["SAVE_SUCCESS"])
 
     def load_settings(self):
         """Loads settings from storage if they exist"""
@@ -327,14 +327,14 @@ class GUI(QWidget):
             
             env = self.toolchain.get_env()
             if shutil.which("make", path=env["PATH"]) is None:
-                self.log.append("❌ make not found in PATH")
+                self.log.append(LOG_MESSAGES["MAKE_MISSING"])
             else:
-                self.log.append("✔️ make found in PATH")
+                self.log.append(LOG_MESSAGES["MAKE_FOUND"])
 
             self.project_path = self.ensure_user_firmware(app_root, self.log)
             self.status_label.setText(f"Selected: {self.project_path}")
         except Exception as e:
-            self.log.append(f"❗️ Toolchain error: {e}")
+            self.log.append(LOG_MESSAGES["TOOLCHAIN_ERROR"].format(e))
     ##
     # Paths
     ##
@@ -389,10 +389,10 @@ class GUI(QWidget):
             if not dst.exists():
                 shutil.copytree(src, dst)
                 if log:
-                    log.append(f"✔️ Firmware copied to user workspace:\n{dst}\n")
+                    log.append(LOG_MESSAGES["FIRMWARE_COPY"].format(dst))
             else:
                 if log:
-                    log.append(f"✔️ Using existing firmware:\n{dst}\n")
+                    log.append(LOG_MESSAGES["FIRMWARE_EXIST"].format(dst))
 
             return str(dst)
         else:
@@ -483,16 +483,16 @@ class GUI(QWidget):
 
     def clean_project(self):
         if not self.project_path:
-            self.log.append("No project selected!")
+            self.log.append(LOG_MESSAGES["NO_PROJECT"])
             return
 
         build_dir = os.path.join(self.project_path, "Debug")
         
         if not os.path.isdir(build_dir):
-            self.log.append(f"Build directory not found: {build_dir}\n")
+            self.log.append(LOG_MESSAGES["BUILD_NOT_FOUND"].format(build_dir))
             return
 
-        self.log.append(f"Cleaning in: {build_dir}\n")
+        self.log.append(LOG_MESSAGES["CLEAN_START"].format(build_dir))
 
         os_type = self.detect_os()
 
@@ -504,18 +504,18 @@ class GUI(QWidget):
             cmd = "make clean"
 
         else:
-            self.log.append("Unsupported OS for cleaning.")
+            self.log.append(LOG_MESSAGES["CLEAN_UNSUPPORTED"])
             return
 
         self.run_cmd(cmd, cwd=build_dir)
 
     def build_project(self):
         if not self.project_path:
-            self.log.append("No project selected!")
+            self.log.append(LOG_MESSAGES["NO_PROJECT"])
             return
 
         build_dir = os.path.join(self.project_path, "Debug")
-        self.log.append(f"Building in: {build_dir}\n")
+        self.log.append(LOG_MESSAGES["BUILD_START"].format(build_dir))
 
         os_type = self.detect_os()
 
@@ -527,20 +527,20 @@ class GUI(QWidget):
             cmd = "make all -j8"
 
         else:
-            self.log.append("Unsupported OS for building.")
+            self.log.append(LOG_MESSAGES["BUILD_UNSUPPORTED"])
             return
 
         self.run_cmd(cmd, cwd=build_dir)
 
 
     def flash_project(self):
-        self.log.append(f"Flashing firmware...")
+        self.log.append(LOG_MESSAGES["FLASH_START"])
         if not self.project_path:
-            self.log.append("No project selected!")
+            self.log.append(LOG_MESSAGES["NO_PROJECT"])
             return
 
         elf = os.path.join(self.project_path, "Debug", "Accoustic-Controller.elf")
-        self.log.append(f"Flashing ELF: {elf}")
+        self.log.append(LOG_MESSAGES["FLASH_ELF"].format(elf))
 
         os_type = self.detect_os()
 
@@ -569,7 +569,7 @@ class GUI(QWidget):
             )
 
         else:
-            self.log.append("Unsupported OS for flashing.")
+            self.log.append(LOG_MESSAGES["FLASH_UNSUPPORTED"])
             return
 
         self.run_cmd(cmd)
@@ -578,14 +578,14 @@ class GUI(QWidget):
     def restore_factory_settings(self):
         """Clears saved settings and resets UI to hardcoded defaults"""
         perform_factory_reset(self)
-        self.log.append("🔄 Restored to Factory Settings.")
+        self.log.append(LOG_MESSAGES["FACTORY_RESET_DONE"])
 
     def confirm_factory_reset(self):
         """Shows a modal confirmation dialog before resetting."""
         msg_box = QMessageBox(self)
-        msg_box.setWindowTitle("Confirm Factory Reset")
-        msg_box.setText("Are you sure you want to reset ALL modes' values to factory settings?")
-        msg_box.setInformativeText("This will clear your saved defaults values and cannot be undone.")
+        msg_box.setWindowTitle(UI_TEXT["CONFIRM_RESET_TITLE"])
+        msg_box.setText(UI_TEXT["CONFIRM_RESET_TEXT"])
+        msg_box.setInformativeText(UI_TEXT["CONFIRM_RESET_INFO"])
         msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
         msg_box.setDefaultButton(QMessageBox.StandardButton.No)
         msg_box.setIcon(QMessageBox.Icon.Warning)
@@ -594,9 +594,9 @@ class GUI(QWidget):
 
         if result == QMessageBox.StandardButton.Yes:
             self.restore_factory_settings()
-            self.log.append("✅ All modes have been reset to factory defaults.")
+            self.log.append(LOG_MESSAGES["FACTORY_RESET_CONFIRM"])
         else:
-            self.log.append("✖️ Factory reset cancelled.")
+            self.log.append(LOG_MESSAGES["FACTORY_RESET_CANCEL"])
 
 
 
