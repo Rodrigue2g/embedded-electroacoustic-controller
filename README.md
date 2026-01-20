@@ -49,8 +49,8 @@ The repository is organized to clearly separate **embedded firmware**, **applica
     │       ├── bin/
     │       └── lib/
     ├── main.py
-    ├── STM32Builder.spec
-    ├── STM32Builder_win.spec
+    ├── EARBuilder.spec
+    ├── EARBuilder_win.spec
     ├── installer.iss
     ├── requirements.txt
     ├── requirements-dev.txt
