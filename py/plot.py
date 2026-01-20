@@ -30,7 +30,6 @@ def handle_plot(self, values, mode_name):
 
     # Discrete tf H(z)
     bz, az = compute_filter_coeffs(p)
-    # Filter signal
     y_disc = signal.lfilter(bz, az, x)
 
     # Use hanning window to reduce spectral leakage

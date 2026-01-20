@@ -11,11 +11,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QAction, QActionGroup
 from PySide6.QtCore import QSettings
 from PySide6.QtWidgets import QMessageBox
-from py.c2d import Params, compute_filter_coeffs
 from py.toolchain import ToolchainManager
 from py.ui_components import ParamsWidget
 from py.plot import handle_plot
 from py.save_params import save_all_params
+from py.factory_settings import perform_factory_reset, DEFAULT_FS
 import shutil
 from pathlib import Path
 import platform
@@ -182,7 +182,7 @@ class GUI(QWidget):
         lbl_fs = QLabel("Sampling Frequency:")
         self.global_fs = QComboBox()
         self.global_fs.addItems(["2000", "5000", "10000", "20000", "25000", "40000", "50000"])
-        self.global_fs.setCurrentText("10000")
+        self.global_fs.setCurrentText(DEFAULT_FS)
 
         layout.addWidget(lbl_fs)
         layout.addWidget(self.global_fs)
@@ -321,7 +321,6 @@ class GUI(QWidget):
         self.project_path = self.get_project_root()
         self.status_label.setText(f"Selected: {self.project_path}")
         
-        # Logging basics
         self.log.append(f"--Debug-- sys.frozen = {getattr(sys, 'frozen', None)}")
         self.log.append(f"--Debug-- sys.executable = {sys.executable}")
 
@@ -589,14 +588,8 @@ class GUI(QWidget):
 
     def restore_factory_settings(self):
         """Clears saved settings and resets UI to hardcoded defaults"""
-        self.settings.clear()
-        # Reset UI manually to hardcoded values
-        self.global_fs.setCurrentText("10000")
-        # Trigger your internal reset logic for ParamsWidgets
-        # e.g., self.mode1_ui.reset_to_hardcoded()
-        # We should call the setCurrentText here
+        perform_factory_reset(self)
         self.log.append("🔄 Restored to Factory Settings.")
-
 
     def confirm_factory_reset(self):
         """Shows a modal confirmation dialog before resetting."""

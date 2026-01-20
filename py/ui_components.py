@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QSlider, QDoubleSpinBox, QPushButton
 )
 from PySide6.QtCore import Qt, Signal
+from py.factory_settings import FACTORY_DEFAULTS
 
 class ParamsWidget(QWidget):
     # Define a signal that sends a dictionary of values when triggered
@@ -16,12 +17,12 @@ class ParamsWidget(QWidget):
         self.group_box.setLayout(self.layout)
         
         # --- INPUTS ---
-        self.sens_p_input = QLineEdit("37.1e-3")
-        self.Sd_input     = QLineEdit("24e-4")
-        self.Bl_input     = QLineEdit("1.8656")
-        self.Rms_input    = QLineEdit("0.74")
-        self.Mms_input    = QLineEdit("0.0012")
-        self.Cmc_input    = QLineEdit("1.3638e-4")
+        self.sens_p_input = QLineEdit(str(FACTORY_DEFAULTS.get("sens_p", "37.1e-3")))
+        self.Sd_input     = QLineEdit(str(FACTORY_DEFAULTS.get("Sd", "24e-4")))
+        self.Bl_input     = QLineEdit(str(FACTORY_DEFAULTS.get("Bl", "1.8656")))
+        self.Rms_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Rms", "0.74")))
+        self.Mms_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Mms", "0.0012")))
+        self.Cmc_input    = QLineEdit(str(FACTORY_DEFAULTS.get("Cmc", "1.3638e-4")))
 
         self.layout.addRow("sens_p:", self.sens_p_input)
         
@@ -36,15 +37,18 @@ class ParamsWidget(QWidget):
         self.layout.addRow("Cmc (m/N):", self.Cmc_input)
 
         # f_target
-        self.f_tgt_input, self.f_tgt_slider = self.create_slider_input(0, 1000, 220)
+        f_tgt_default = FACTORY_DEFAULTS.get("f_tgt", 220)
+        self.f_tgt_input, self.f_tgt_slider = self.create_slider_input(0, 1000, f_tgt_default)
         self.add_slider_row("f_target (Hz):", self.f_tgt_input, self.f_tgt_slider)
 
         # muM
-        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, 0.30, scale=1000)
+        muM_default = FACTORY_DEFAULTS.get("muM", 0.30)
+        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, muM_default, scale=1000)
         self.add_slider_row("muM:", self.muM_input, self.muM_slider)
 
         # muR
-        self.muR_input, self.muR_slider = self.create_slider_input(0.04, 1.0, 0.10, scale=1000)
+        muR_default = FACTORY_DEFAULTS.get("muR_factor", 0.10)
+        self.muR_input, self.muR_slider = self.create_slider_input(0.04, 1.0, muR_default, scale=1000)
         self.add_slider_row("muR factor:", self.muR_input, self.muR_slider)
 
         # --- PLOT BUTTON ---

@@ -1,10 +1,23 @@
+"""
+###
+# This File is for test purposes only. 
+# To avoid any inconcistencies, use `compute_filter_coeffs.py` instead.
+###
+"""
 import numpy as np
 import control
 
-
+"""
+DEPRECATED
+USE `Params` from `compute_filter_coeffs.py` instead.
+"""
 class Params:
     pass
 
+"""
+DEPRECATED
+USE `compute_filter_coeffs` from `compute_filter_coeffs.py` instead.
+"""
 def compute_filter_coeffs(params):
     scaling = params.Sd / params.Bl
     # num_c = [
@@ -19,33 +32,14 @@ def compute_filter_coeffs(params):
     ]
     # den_c = [params.b2, params.b1, params.b0]
     den_c = [params.b0, params.b1, params.b2]
+
     Phi_c = control.tf(num_c, den_c)
     Phi_d = control.c2d(Phi_c, params.ts_ctr, method='tustin')
+
     bz = list(Phi_d.num[0][0])
     az = list(Phi_d.den[0][0])
 
     return bz, az
-
-
-# def compute_filter_coeffs(params):
-#     """Computes discrete filter coefficients from physical parameters."""
-
-#     # Continuous numerator
-#     num_c = [
-#         params.Sd/params.Bl * params.a2,
-#         params.Sd/params.Bl * params.a1,
-#         params.Sd/params.Bl * params.a0
-#     ]
-#     # Continuous denominator
-#     den_c = [params.b2, params.b1, params.b0]
-
-#     Phi_c = control.tf(num_c, den_c)
-#     Phi_d = control.c2d(Phi_c, params.ts_ctr, method='tustin')
-
-#     bz = Phi_d.num[0][0]
-#     az = Phi_d.den[0][0]
-
-#     return bz, az   # Python lists
 
 
 def initParams():
@@ -77,13 +71,19 @@ def initParams():
     params.muC = (2*np.pi*f_tgt)**2 * params.Mms * params.Cmc
 
     # ===== Continuous TF coefficients =====
-    params.b2 = params.muM * params.Mms * params.Cmc
+    # Denominator
+    # params.b2 = params.muM * params.Mms * params.Cmc
+    params.b0 = params.muM * params.Mms * params.Cmc
     params.b1 = params.muR * params.Rms * params.Cmc
-    params.b0 = params.muC
+    # params.b0 = params.muC
+    params.b2 = params.muC
 
-    params.a2 = (params.muM - 1.0) * params.Mms * params.Cmc
+    # Numerator
+    # params.a2 = (params.muM - 1.0) * params.Mms * params.Cmc
+    params.a0 = (params.muM - 1.0) * params.Mms * params.Cmc
     params.a1 = (params.muR - 1.0) * params.Rms * params.Cmc
-    params.a0 = (params.muC - 1.0)
+    # params.a0 = (params.muC - 1.0)
+    params.a1 = (params.muC - 1.0)
 
     # ===== Sampling =====
     params.ts_ctr = 40e-6
