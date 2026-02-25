@@ -20,7 +20,7 @@ FACTORY_DEFAULTS = {
 ##
 # Default Sampling frequency (fs)
 # The value should exist in this array
-# ["2000", "5000", "10000", "20000", "25000", "40000", "50000"]
+# ["2000", "5000", "10000", "20000", "25000"] # "40000", "50000"
 ##
 DEFAULT_FS = "10000"
 

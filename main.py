@@ -183,7 +183,7 @@ class GUI(QWidget):
 
         lbl_fs = QLabel("Sampling Frequency:")
         self.global_fs = QComboBox()
-        self.global_fs.addItems(["2000", "5000", "10000", "20000", "25000", "40000", "50000"])
+        self.global_fs.addItems(["2000", "5000", "10000", "20000", "25000"]) # "40000", "50000"
         self.global_fs.setCurrentText(DEFAULT_FS)
 
         layout.addWidget(lbl_fs)
@@ -310,7 +310,7 @@ class GUI(QWidget):
         try:
             return float(self.global_fs.currentText())
         except ValueError:
-            return 25000.0
+            return float(DEFAULT_FS)
         
     def init_toolchain(self):
         """Moved initialization logic here for cleaner __init__"""
@@ -611,6 +611,7 @@ class GUI(QWidget):
             return
 
         self.run_cmd(cmd)
+        # Add a success message (pop up)?
 
 
     def restore_factory_settings(self):
