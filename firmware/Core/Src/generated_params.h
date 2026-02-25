@@ -31,8 +31,8 @@ static float coeffs_m1[5] = { -3.118062580219e-03f, 5.777957096885e-03f, -2.8930
 static float coeffs_m2[5] = { -3.118062580219e-03f, 5.777957096885e-03f, -2.893029328615e-03f, 1.954338268883e+00f, -9.730991998799e-01f };
 static float coeffs_m3[5] = { -3.118062580219e-03f, 5.777957096885e-03f, -2.893029328615e-03f, 1.954338268883e+00f, -9.730991998799e-01f };
 
-static float* coeff_lut[4] = { NULL, coeffs_m1, coeffs_m2, coeffs_m3 };
+static float* coeff_lut[4] __attribute__((unused)) = { NULL, coeffs_m1, coeffs_m2, coeffs_m3 };
 
-static float i2u_lut[4] = { 0, I2U_1, I2U_2, I2U_3 };
+static float i2u_lut[4] __attribute__((unused)) = { 0, I2U_1, I2U_2, I2U_3 };
 
 #endif

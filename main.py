@@ -375,13 +375,51 @@ class GUI(QWidget):
             # Dev mode uses the local folder
             return os.path.join(os.path.dirname(os.path.abspath(__file__)), "firmware")
         
+        ###
+        # @TODO 
+        ###
+
+    # def get_project_root(self):
+    #     """
+    #     Returns the path where the firmware and user-modifiable project lives.
+    #     On macOS, this is in ~/Documents/EARBuilder (writable).
+    #     On Windows, in ~/Documents/STM32Builder.
+    #     In dev mode, use local 'firmware' folder.
+    #     """
+    #     if getattr(sys, 'frozen', False):
+    #         # Packaged app
+    #         if platform.system() == "Darwin":
+    #             base = Path.home() / "Documents" / "EARBuilder"
+    #         elif platform.system() == "Windows":
+    #             base = Path.home() / "Documents" / "STM32Builder"
+    #         else:
+    #             base = Path.home() / "EARBuilder"
+
+    #         dst = base / "Accoustic-Controller"
+    #         src = Path(sys.executable).parent / ".." / "Resources" / "Accoustic-Controller"
+
+    #         if not dst.exists():
+    #             import shutil
+    #             shutil.copytree(src, dst)
+    #             self.log.append(f"Firmware copied to user folder: {dst}")
+    #         else:
+    #             self.log.append(f"Firmware already exists in user folder: {dst}")
+
+    #         return str(dst)
+
+    #     else:
+    #         # Dev mode: use local folder
+    #         return str(Path(__file__).parent / "firmware")
+
     def ensure_user_firmware(self, app_root, log=None):
         if getattr(sys, 'frozen', False):
             if platform.system() == "Windows":
                 base = Path.home() / "Documents" / "STM32Builder"
+            elif platform.system() == "Darwin":
+                base = Path.home() / "Documents" / "EARBuilder"
+                # base = Path(app_root)
             else:
-                # macOS
-                base = Path(app_root)
+                base = Path.home() / "EARBuilder"
 
             dst = base / "Accoustic-Controller"
             src = Path(app_root) / "Accoustic-Controller"

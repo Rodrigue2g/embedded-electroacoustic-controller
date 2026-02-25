@@ -85,9 +85,9 @@ static float coeffs_m1[5] = {{ {coefs1[0]:.12e}f, {coefs1[1]:.12e}f, {coefs1[2]:
 static float coeffs_m2[5] = {{ {coefs2[0]:.12e}f, {coefs2[1]:.12e}f, {coefs2[2]:.12e}f, {coefs2[3]:.12e}f, {coefs2[4]:.12e}f }};
 static float coeffs_m3[5] = {{ {coefs3[0]:.12e}f, {coefs3[1]:.12e}f, {coefs3[2]:.12e}f, {coefs3[3]:.12e}f, {coefs3[4]:.12e}f }};
 
-static float* coeff_lut[4] = {{ NULL, coeffs_m1, coeffs_m2, coeffs_m3 }};
+static float* coeff_lut[4] __attribute__((unused)) = {{ NULL, coeffs_m1, coeffs_m2, coeffs_m3 }};
 
-static float i2u_lut[4] = {{ 0, I2U_1, I2U_2, I2U_3 }};
+static float i2u_lut[4] __attribute__((unused)) = {{ 0, I2U_1, I2U_2, I2U_3 }};
 
 #endif
 """
@@ -132,9 +132,9 @@ static float coeffs_m4[5] = {{ {coefs4[0]:.12e}f, {coefs4[1]:.12e}f, {coefs4[2]:
 static float coeffs_m5[5] = {{ {coefs5[0]:.12e}f, {coefs5[1]:.12e}f, {coefs5[2]:.12e}f, {coefs5[3]:.12e}f, {coefs5[4]:.12e}f }};
 static float coeffs_m6[5] = {{ {coefs6[0]:.12e}f, {coefs6[1]:.12e}f, {coefs6[2]:.12e}f, {coefs6[3]:.12e}f, {coefs6[4]:.12e}f }};
 
-static float* coeff_lut[7] = {{ NULL, coeffs_m1, coeffs_m2, coeffs_m3, coeffs_m4, coeffs_m5, coeffs_m6 }};
+static float* coeff_lut[7] __attribute__((unused)) = {{ NULL, coeffs_m1, coeffs_m2, coeffs_m3, coeffs_m4, coeffs_m5, coeffs_m6 }};
 
-static float i2u_lut[7] = {{ 0, I2U_1, I2U_2, I2U_3, I2U_4, I2U_5, I2U_6 }};
+static float i2u_lut[7] __attribute__((unused)) = {{ 0, I2U_1, I2U_2, I2U_3, I2U_4, I2U_5, I2U_6 }};
 
 #endif
 """

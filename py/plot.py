@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from py.compute_filter_coeffs import compute_filter_coeffs
 from py.physics import get_physics_params
 
+
 def handle_plot(self, values, mode_name, fs):
     self.log.append(f"Generating validation plot for {mode_name}...")
     
@@ -84,4 +85,4 @@ def handle_plot(self, values, mode_name, fs):
     ax2.set_xlim([10, fs/2])
 
     plt.tight_layout()
-    plt.show()
+    plt.show(block=False)
