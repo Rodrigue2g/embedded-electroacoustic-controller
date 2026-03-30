@@ -9,19 +9,27 @@ def handle_plot(self, values, mode_name, fs):
     self.log.append(f"Generating validation plot for {mode_name}...")
     
     p = get_physics_params(values)
-    
-    # Comtinuous sys H(s)
-    # H(s) = num_c / den_c
-    # num_c = np.array([p.a2, p.a1, p.a0]) * p.Sd / p.Bl
-    # den_c = np.array([p.b2, p.b1, p.b0])
+
+    # Continuous sys H(s)
     num_c = np.array([p.a0, p.a1, p.a2]) * p.Sd / p.Bl
     den_c = np.array([p.b0, p.b1, p.b2])
     Hs_c = (num_c, den_c)
+
+    # Total gain: mic sensitivity [V/Pa] × i2u
+    total_gain = p.sens_p * p.i2u
+    total_gain_dB = 20 * np.log10(abs(total_gain))
+
+    self.log.append(
+        f"sens_p = {p.sens_p:.4g} V/Pa  |  "
+        f"i2u = {p.i2u:.4g}  |  "
+        f"Total gain = {total_gain_dB:.2f} dB"
+    )
     
     # Signal
     dur = 5.0
     t = np.arange(0, dur, 1/fs)
-    x = signal.chirp(t, f0=10, f1=1600, t1=dur, method='linear') 
+    x = signal.chirp(t, f0=10, f1=1600, t1=dur, method='linear')
+
     try:
         _, y_cont, _ = signal.lsim(Hs_c, U=x, T=t)
     except Exception as e:
@@ -32,18 +40,22 @@ def handle_plot(self, values, mode_name, fs):
     bz, az = compute_filter_coeffs(p, fs)
     y_disc = signal.lfilter(bz, az, x)
 
-    # Use hanning window to reduce spectral leakage
+    # Apply the total gain before the fft
+    y_cont_scaled = y_cont * total_gain
+    y_disc_scaled = y_disc * total_gain
+
+    # Hanning window to reduce spectral leakage
     window = np.hanning(len(x))
     x_win = x * window
-    y_cont_win = y_cont * window
-    y_disc_win = y_disc * window
+    y_cont_win = y_cont_scaled * window
+    y_disc_win = y_disc_scaled * window
 
-    N = len(x)
-    Nfft = 2**int(np.ceil(np.log2(N))) 
-    
+    N    = len(x)
+    Nfft = 2 ** int(np.ceil(np.log2(N)))
+
     f_axis = np.fft.fftfreq(Nfft, d=1/fs)
     # Filter valid frequencies (10Hz to Nyquist)
-    mask = (f_axis > 10) & (f_axis < fs/2)
+    mask   = (f_axis > 10) & (f_axis < fs / 2)
     f_plot = f_axis[mask]
 
     X_fft = np.fft.fft(x_win, n=Nfft)
@@ -54,21 +66,19 @@ def handle_plot(self, values, mode_name, fs):
     H_cont_sim = Y_cont_fft[mask] / (X_fft[mask] + 1e-12)
     H_disc_sim = Y_disc_fft[mask] / (X_fft[mask] + 1e-12)
 
-    # H_cont_sim = Y_cont_fft[mask] * np.linalg.pinv([X_fft[mask]])
-    # H_disc_sim = Y_disc_fft[mask] * np.linalg.pinv([X_fft[mask]])
-
     # Theoretical ref
     w = 2 * np.pi * f_plot
     s = 1j * w
-    resp_theory = np.polyval(num_c, s) / np.polyval(den_c, s)
+    resp_theory = (np.polyval(num_c, s) / np.polyval(den_c, s)) * total_gain
 
     # Plots
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-    fig.suptitle(f'Validation: {mode_name}', fontsize=16)
+    fig.suptitle(f'Validation: {mode_name} ({total_gain_dB:+.1f} dB)', fontsize=16)
+
     # Magnitude
-    ax1.semilogx(f_plot, 20 * np.log10(np.abs(resp_theory)), 'k', linewidth=2.5, alpha=0.5, label='Theory H(s)')
-    ax1.semilogx(f_plot, 20 * np.log10(np.abs(H_cont_sim)), 'g--', linewidth=1.5, label='Sim Cont')
-    ax1.semilogx(f_plot, 20 * np.log10(np.abs(H_disc_sim)), 'r--', linewidth=1.5, label='Sim Disc')
+    ax1.semilogx(f_plot, 20*np.log10(np.abs(resp_theory)), 'k', linewidth=2.5, alpha=0.5, label='Theory H(s)')
+    ax1.semilogx(f_plot, 20*np.log10(np.abs(H_cont_sim)), 'g--', linewidth=1.5, label='Sim Cont')
+    ax1.semilogx(f_plot, 20*np.log10(np.abs(H_disc_sim)), 'r--', linewidth=1.5, label='Sim Disc')
     ax1.set_title("Magnitude Response")
     ax1.set_ylabel("Magnitude (dB)")
     ax1.grid(True, which="both", alpha=0.5)
@@ -82,6 +92,7 @@ def handle_plot(self, values, mode_name, fs):
     ax2.set_ylabel("Phase (deg)")
     ax2.set_xlabel("Frequency (Hz)")
     ax2.grid(True, which="both", alpha=0.5)
+    ax2.legend()
     ax2.set_xlim([10, fs/2])
 
     plt.tight_layout()

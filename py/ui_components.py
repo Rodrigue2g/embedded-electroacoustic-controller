@@ -44,12 +44,12 @@ class ParamsWidget(QWidget):
 
         # muM
         muM_default = FACTORY_DEFAULTS.get("muM")
-        self.muM_input, self.muM_slider = self.create_slider_input(0.2, 2.0, muM_default, scale=1000)
+        self.muM_input, self.muM_slider = self.create_slider_input(0, 2.0, muM_default, scale=1000)
         self.add_slider_row("muM:", self.muM_input, self.muM_slider)
 
         # muR
         muR_default = FACTORY_DEFAULTS.get("muR_factor")
-        self.muR_input, self.muR_slider = self.create_slider_input(0.04, 1.0, muR_default, scale=1000)
+        self.muR_input, self.muR_slider = self.create_slider_input(0, 1.0, muR_default, scale=1000)
         self.add_slider_row("muR factor:", self.muR_input, self.muR_slider)
 
         # --- PLOT BUTTON ---
@@ -74,11 +74,19 @@ class ParamsWidget(QWidget):
         slider.setValue(int(default_val * scale))
 
         if scale == 1:
-            slider.valueChanged.connect(spinbox.setValue)
-            spinbox.valueChanged.connect(lambda v: slider.setValue(int(v)))
+            slider.valueChanged.connect(
+                lambda v: (spinbox.blockSignals(True), spinbox.setValue(v), spinbox.blockSignals(False))
+            )
+            spinbox.valueChanged.connect(
+                lambda v: (slider.blockSignals(True), slider.setValue(int(v)), slider.blockSignals(False))
+            )
         else:
-            slider.valueChanged.connect(lambda v: spinbox.setValue(v / scale))
-            spinbox.valueChanged.connect(lambda v: slider.setValue(int(v * scale)))
+            slider.valueChanged.connect(
+                lambda v: (spinbox.blockSignals(True), spinbox.setValue(v / scale), spinbox.blockSignals(False))
+            )
+            spinbox.valueChanged.connect(
+                lambda v: (slider.blockSignals(True), slider.setValue(int(v * scale)), slider.blockSignals(False))
+            )
 
         return spinbox, slider
 
